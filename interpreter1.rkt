@@ -54,8 +54,8 @@
 ;returns the result of the function
 ;either returns the int value of the function
 ;or returns the boolean value of the function in form of true/false not #t/#f
-(define mStateReturn ;is this really a mState function? no state is changed and a state isn't returned
-  (lambda expression state
+(define return 
+  (lambda (expression state)
     (cond
       ((isIntOperator? (operator expression)) (mValue expression state))
       (else
