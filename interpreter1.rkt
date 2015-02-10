@@ -105,6 +105,7 @@
       ((eq? 'return (operator expression)) (return expression state))
       (else (error 'mState "illegal operator"))
       )))
+
 (define variable cadr)
 (define assignedVal caddr)
 (define condition cadr)
@@ -115,9 +116,11 @@
        
 (define findValue
   (lambda (var state)
-    (if (eq? (car (vars state)) var)
-        (car (vals state))
-        (findValue var (nextPair state)))))
+    (if (pair? (vars state))
+        (if (eq? (car (vars state)) var)
+            (car (vals state))
+            (findValue var (nextPair state)))
+        (error 'findValue "calling an undeclared variable"))))
 
 (define pairToState
   (lambda (var value)
