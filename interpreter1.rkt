@@ -51,6 +51,14 @@
             (mStateAssign var value (nextPair state)))
         (error 'mState "assigning a value to an undeclared variable"))))
 
+(define mStateIfElse
+  (lambda (condition then else state)
+    ))
+(define mStateIf
+  (lambda (condition then state)
+    ))
+    
+    
 ;returns the result of the function
 ;either returns the int value of the function
 ;or returns the boolean value of the function in form of true/false not #t/#f
