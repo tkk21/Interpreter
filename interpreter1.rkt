@@ -102,7 +102,7 @@
        (if (pair? cdddr expression)
            (mStateIfElse (condition expression) (then expression) (else expression) state)
            (mStateIf (condition expression) (then expression) state )))
-      )))))
+      )))
 (define variable cadr)
 (define assignedVal caddr)
 (define condition cadr)
