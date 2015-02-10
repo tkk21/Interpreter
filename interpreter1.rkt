@@ -95,6 +95,9 @@
       )))))
 (define variable cadr)
 (define assignedVal caddr)
+(define condition cadr)
+(define then caddr)
+(define else cadddr)
 
   
        
