@@ -45,9 +45,11 @@
 
 (define mStateAssign
   (lambda (var value state)
-    (if (eq? (car (vars state)) var)
-        (pairToState (cons var (cdr (vars state))) (cons value (cdr (vals state))))
-        (mStateAssign var value (nextPair state)))))
+    (if (pair? (car state))
+        (if (eq? (car (vars state)) var)
+            (pairToState (cons var (cdr (vars state))) (cons value (cdr (vals state))))
+            (mStateAssign var value (nextPair state)))
+        (error 'mState "assigning a value to an undeclared variable"))))
 
 ;returns the result of the function
 ;either returns the int value of the function
