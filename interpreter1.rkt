@@ -100,8 +100,8 @@
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state)) ;eg. x = 5
       ((eq? 'if (operator expression))
        (if (pair? cdddr expression)
-           (mStateIfElse (condition expression) (then expression) (else expression) state)
-           (mStateIf (condition expression) (then expression) state )))
+           (mStateIfElse (
+       (mStateIf ( )))
       )))))
 (define variable cadr)
 (define assignedVal caddr)
