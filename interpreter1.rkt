@@ -53,10 +53,16 @@
 
 (define mStateIfElse
   (lambda (condition then else state)
-    ))
+    (if (mBool condition state)
+        (mState then state) ;just change the state here if I want to do the side effect condition
+        (mState else state)
+    )))
 (define mStateIf
   (lambda (condition then state)
-    ))
+    (if (mBool condition state)
+        (mState then state)
+        (mState else state)
+    )))
     
     
 ;returns the result of the function
