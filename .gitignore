@@ -1,6 +1,7 @@
 #scheme backup files
 *.bak
 *.1
+parse.txt
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
