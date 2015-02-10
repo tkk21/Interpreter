@@ -103,6 +103,7 @@
            (mStateIfElse (condition expression) (then expression) (else expression) state)
            (mStateIf (condition expression) (then expression) state )))
       ((eq? 'return (operator expression)) (return expression state))
+      (else (error 'mState "illegal operator"))
       )))
 (define variable cadr)
 (define assignedVal caddr)
