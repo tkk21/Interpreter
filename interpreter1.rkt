@@ -81,9 +81,9 @@
     (cond
       ((eq? 'var (operator expression) 
            (if (pair? cddr expression)
-               (mStateAssign (variable expression) (assignedVal expression) (mStateDeclare (variable expression)))
-               (mStateDeclare (variable expression)))))
-      ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state))
+               (mStateAssign (variable expression) (assignedVal expression) (mStateDeclare (variable expression))) ;eg. var x = 5
+               (mStateDeclare (variable expression))))) ; eg. var x
+      ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state)) ;eg. x = 5
       )))))
 (define variable cadr)
 (define assignedVal caddr)
