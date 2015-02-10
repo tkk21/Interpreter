@@ -83,7 +83,7 @@
            (if (pair? cddr expression)
                (mStateAssign (variable expression) (assignedVal expression) (mStateDeclare (variable expression)))
                (mStateDeclare (variable expression)))))
-      ((eq? '= (operator expression))
+      ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state))
       )))))
 (define variable cadr)
 (define assignedVal caddr)
