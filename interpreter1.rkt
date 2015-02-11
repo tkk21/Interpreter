@@ -152,7 +152,7 @@
 
 (define nextPair
   (lambda (state)
-    (pairToState (cons (car (vars state)) (cdr (vars state))) (cons (car (vals state)) (cdr (vals state))))))
+    (pairToState (cdr (vars state)) (cdr (vals state)))))
 
 (define vars car)
 (define vals cadr)
