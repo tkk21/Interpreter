@@ -63,7 +63,7 @@
   (lambda (var value state)
     (if (pair? (car state))
         (if (eq? (car (vars state)) var)
-            (pairToState (cons var (cdr (vars state))) (cons value (cdr (vals state))))
+            (pairToState (cons var (cdr (vars state))) (cons (mBool value state) (cdr (vals state))))
             (mStateAssign var value (nextPair state)))
         (error 'mState "assigning a value to an undeclared variable"))))
 
