@@ -75,6 +75,8 @@
 (define return 
   (lambda (expression state)
     (cond
+      ((number? expression) expression)
+      ((not(pair? expression)) (findValue expression state))
       ((isIntOperator? (operator expression)) (mValue expression state))
       (else
        (if (mBool expression state)
