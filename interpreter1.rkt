@@ -1,3 +1,4 @@
+;*outline about state*
 ;state is a list that contains two list
 ;such that '( (variables) (values))
 ;for example '( (x y z) (4 8 #f))
@@ -5,6 +6,8 @@
 
 (load "simpleParser.scm")
 
+;*mValue function*
+;code outline
 ;mValue is going to need +,-,*,/,%, and negative sign
 ;when doing negative sign just do (- 0 expression)
 (define mValue
@@ -22,6 +25,8 @@
 (define leftOperand cadr)
 (define rightOperand caddr)
 
+;*mBool function*
+;code outline
 ;mBool is going to need ==, !=, <, >, <=, >=, and &&, ||, !
 ;not going to worry about cases where 3<true
 ;if we're doing something like x&&true, x better be a boolean or we're not worrying
