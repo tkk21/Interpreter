@@ -171,8 +171,8 @@
 
 (define test
   (lambda (filename num)
-    (eq? (interpret (dotTxt (string-append filename (number->string num)))) (cadr(car(parser (dotTxt(string-append filename (string-append "_answer" (number->string num))))))))
-    ))
+    (eq? (interpret (dotTxt (string-append filename (number->string num)))) (interpret (dotTxt(string-append filename (string-append "_answer" (number->string num))))))))
+    
 ;tests to see if they're correct
 (define testBatch
   (lambda (filename num)
