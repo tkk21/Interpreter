@@ -84,6 +84,7 @@
            'false
            )))))
 
+
 (define isIntOperator?
   (lambda (op)
     (member? op '(+ - * / %))))
@@ -95,7 +96,7 @@
         (or (eq? a (car list)) (member? a (cdr list))))))
     
 
-;the main state method for evaluating each line
+;the main state method that calls its helper methods
 (define mState
   (lambda (expression state)
     (cond
@@ -112,6 +113,7 @@
       (else (error 'mState "illegal operator"))
       )))
 
+;abstractions to make mState helper calling eaasier
 (define variable cadr)
 (define assignedVal caddr)
 (define condition cadr)
@@ -119,7 +121,7 @@
 (define else cadddr)
 
   
-       
+;finds a value inside the state by using the var to look it up
 (define findValue
   (lambda (var state)
     (if (pair? (vars state))
@@ -128,6 +130,7 @@
             (findValue var (nextPair state)))
         (error 'findValue "calling an undeclared variable"))))
 
+;helper methods to help navigating state easier
 (define pairToState
   (lambda (var value)
     (cons var (cons value '()))))
