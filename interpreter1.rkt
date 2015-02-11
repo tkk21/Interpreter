@@ -108,7 +108,7 @@
        (if (pair? (cdddr expression))
            (mStateIfElse (condition expression) (then expression) (else expression) state)
            (mStateIf (condition expression) (then expression) state )))
-      ((eq? 'return (operator expression)) (return expression state))
+      ((eq? 'return (operator expression)) (return (cadr expression) state))
       (else (error 'mState "illegal operator"))
       )))
 
