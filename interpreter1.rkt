@@ -101,7 +101,7 @@
            (mStateDeclare (variable expression) state))) ; eg. var x
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state)) ;eg. x = 5
       ((eq? 'if (operator expression))
-       (if (pair? cdddr expression)
+       (if (pair? (cdddr expression))
            (mStateIfElse (condition expression) (then expression) (else expression) state)
            (mStateIf (condition expression) (then expression) state )))
       ((eq? 'return (operator expression)) (return expression state))
