@@ -10,7 +10,7 @@
 ;
 ; The return value is a parse tree in list format
 
-(load "c:\\Users\\ted\\OneDrive\\EECS345 Programming Language Concept\\Interpreter\\lex.scm")
+(load "lex.scm")
 
 (define parser
   (lambda (filename)
