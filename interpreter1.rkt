@@ -72,16 +72,16 @@
 
 ;mState's helper methods to do if statements
 (define mStateIfElse
-  (lambda (conditionSt thenSt elseSt state)
-    (if (mBool conditionSt state)
-        (mState thenSt state) ;just change the state here if I want to do the side effect condition
-        (mState elseSt state)
+  (lambda (condition then else state)
+    (if (mBool condition state)
+        (mState then state) ;just change the state here if I want to do the side effect condition
+        (mState else state)
     )))
 (define mStateIf
-  (lambda (conditionSt then state)
-    (if (mBool conditionSt state)
-        (mState thenSt state)
-        (mState elseSt state)
+  (lambda (condition then state)
+    (if (mBool condition state)
+        (mState then state)
+        (mState else state)
     )))
     
     
