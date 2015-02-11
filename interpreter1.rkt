@@ -28,6 +28,7 @@
   (lambda (expression state)
     (cond
       ((boolean? expression) expression)
+      ((not(pair? expression)) (mValue expression state));means that the expression is a value expression not a boolean expression      
       ((eq? '== (operator expression)) (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '!= (operator expression)) (not (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state))))
       ((eq? '< (operator expression)) (< (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
@@ -37,8 +38,8 @@
       ((eq? '&& (operator expression)) (and (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '|| (operator expression)) (or (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '! (operator expression)) (not (mBool expression state))) ;does this work?
-      (else (mValue expression state)) ;means that the expression is a value expression not a boolean expression      
-    )))
+      (else (error 'mBool "illegal operator") 
+    ))))
 
 ;mState is going to need declare, assign, return, and if
 (define mStateDeclare
