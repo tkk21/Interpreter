@@ -16,7 +16,10 @@
       ((number? expression) expression)
       ((not (pair? expression)) (findValue expression state));this expression is a variable
       ((eq? '+ (operator expression)) (+ (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
-      ((eq? '- (operator expression)) (- (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
+      ((eq? '- (operator expression)) 
+       (if (pair?(cddr expression))
+           (- (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)) ;case for a-b
+           (- 0 (mValue (leftOperand expression) state)))) ;case for -a
       ((eq? '* (operator expression)) (* (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '/ (operator expression)) (quotient (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '% (operator expression)) (remainder (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
