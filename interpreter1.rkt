@@ -29,7 +29,7 @@
   (lambda (expression state)
     (cond
       ((boolean? expression) expression)
-      ((not(pair? expression)) (mValue expression state));means that the expression is a value expression not a boolean expression      
+      ((not(pair? expression)) (mValue expression state));means that the expression is an integer      
       ((eq? '== (operator expression)) (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '!= (operator expression)) (not (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state))))
       ((eq? '< (operator expression)) (< (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
