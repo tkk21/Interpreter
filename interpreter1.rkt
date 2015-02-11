@@ -141,7 +141,8 @@
         state
         (evaluate (cdr lines) (mState (car lines) state)))))
 
+;empty state is going to be '( () ())
 (define interpret
   (lambda (filename)
-    (parser filename)
+    (evaluate (parser filename) '(()()))
     ))
