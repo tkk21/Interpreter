@@ -53,7 +53,8 @@
       ((eq? '&& (operator expression)) (and (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '|| (operator expression)) (or (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '! (operator expression)) (not (mBool (leftOperand expression) state)))
-      (else (mValue expression state));means that the expression is a value expression not a boolean expression       
+      (else (error 'mBool "illegal operator")))))
+      ;(else (mValue expression state));means that the expression is a value expression not a boolean expression       
     )))
 
 ;
