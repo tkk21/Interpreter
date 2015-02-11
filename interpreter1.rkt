@@ -14,13 +14,13 @@
   (lambda (expression state)
     (cond
       ((number? expression) expression)
-      ((not (pair? expression)) (findValue expression state))
+      ((not (pair? expression)) (findValue expression state));this expression is a variable
       ((eq? '+ (operator expression)) (+ (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '- (operator expression)) (- (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '* (operator expression)) (* (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '/ (operator expression)) (quotient (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
-      ((eq? '% (operator expression)) (remainder (mValue (leftOperand expression) state) (mValue (rightOperand expression) state))
-      (else (error 'mValue "illegal operator")))))) ;this expression is a variable
+      ((eq? '% (operator expression)) (remainder (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
+      (else (error 'mValue "illegal operator"))))) 
 (define operator car)
 (define leftOperand cadr)
 (define rightOperand caddr)
