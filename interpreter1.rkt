@@ -42,11 +42,18 @@
       (else (mValue expression state));means that the expression is a value expression not a boolean expression       
     )))
 
+;
+;*mState functions*
+;code outline
 ;mState is going to need declare, assign, return, and if
+;
+
+;mState's helper method to do variable declaration
 (define mStateDeclare
   (lambda (var state)
     (pairToState (cons var (vars state)) (cons 0 (vals state))))) ;could use '() to represent uninitialized
 
+;mState's helper method to do variable assignment
 (define mStateAssign
   (lambda (var value state)
     (if (pair? (car state))
@@ -55,6 +62,7 @@
             (mStateAssign var value (nextPair state)))
         (error 'mState "assigning a value to an undeclared variable"))))
 
+;mState's helper methods to do if statements
 (define mStateIfElse
   (lambda (condition then else state)
     (if (mBool condition state)
@@ -81,10 +89,9 @@
       (else
        (if (mBool expression state)
            'true
-           'false
-           )))))
+           'false)))))
 
-
+;needed so that we know the only thing that goes inside (if) is a boolean and not an int
 (define isIntOperator?
   (lambda (op)
     (member? op '(+ - * / %))))
