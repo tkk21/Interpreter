@@ -39,8 +39,8 @@
       ((eq? '&& (operator expression)) (and (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '|| (operator expression)) (or (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '! (operator expression)) (not (mBool expression state))) ;does this work?
-      (else (error 'mBool "illegal operator") 
-    ))))
+      (else (mValue expression state));means that the expression is a value expression not a boolean expression       
+    )))
 
 ;mState is going to need declare, assign, return, and if
 (define mStateDeclare
