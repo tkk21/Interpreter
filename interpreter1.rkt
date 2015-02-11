@@ -81,7 +81,7 @@
   (lambda (condition then state)
     (if (mBool condition state)
         (mState then state)
-        (mState else state)
+        state
     )))
     
     
@@ -125,8 +125,7 @@
            (mStateIfElse (condition expression) (then expression) (else expression) state)
            (mStateIf (condition expression) (then expression) state )))
       ((eq? 'return (operator expression)) (return (cadr expression) state))
-      (else (error 'mState "illegal operator"))
-      )))
+      (else (error 'mState "illegal operator")))))
 
 ;abstractions to make mState helper calling eaasier
 (define variable cadr)
