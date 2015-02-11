@@ -25,6 +25,7 @@
 (define leftOperand cadr)
 (define rightOperand caddr)
 
+;refactored out the subtraction function so that you don't have if inside cond
 (define subtraction
   (lambda (expression state)
     (if (pair?(cddr expression))
