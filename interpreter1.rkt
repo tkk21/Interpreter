@@ -66,7 +66,7 @@
   (lambda (var value state)
     (if (pair? (car state))
         (if (eq? (car (vars state)) var)
-            (pairToState (vars state) (cons (mBool value state) (cdr (vals state))))
+            (pairToState (vars state) (cons value (cdr (vals state))))
             (mStateAssign var value (nextPair state)))
         (error 'mState "assigning a value to an undeclared variable"))))
 
@@ -117,9 +117,9 @@
     (cond
       ((eq? 'var (operator expression))
        (if (pair? (cddr expression))
-           (mStateAssign (variable expression) (assignedVal expression) (mStateDeclare (variable expression) state)) ;eg. var x = 5
+           (mStateAssign (variable expression) (mBool (assignedVal expression) state) (mStateDeclare (variable expression) state)) ;eg. var x = 5
            (mStateDeclare (variable expression) state))) ; eg. var x
-      ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state)) ;eg. x = 5
+      ((eq? '= (operator expression)) (mStateAssign (variable expression) (mBool (assignedVal expression) state) state)) ;eg. x = 5
       ((eq? 'if (operator expression))
        (if (pair? (cdddr expression))
            (mStateIfElse (condition expression) (then expression) (else expression) state)
