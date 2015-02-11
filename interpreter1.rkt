@@ -3,6 +3,8 @@
 ;for example '( (x y z) (4 8 #f))
 ;empty state is going to be '( () ())
 
+(load "simpleParser.scm")
+
 ;mValue is going to need +,-,*,/,%, and negative sign
 ;when doing negative sign just do (- 0 expression)
 (define mValue
@@ -133,6 +135,13 @@
 (define vars car)
 (define vals cadr)
 
+(define evaluate
+  (lambda (lines state)
+    (if (null? lines) 
+        state
+        (evaluate (cdr lines) (mState (car lines) state)))))
 
-;(define interpret
-;  (lambda (filename)
+(define interpret
+  (lambda (filename)
+    (parser filename)
+    ))
