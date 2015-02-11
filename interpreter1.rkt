@@ -148,5 +148,5 @@
 ;empty state is going to be '( () ())
 (define interpret
   (lambda (filename)
-    (evaluate (parser filename) '(()()))
+    (evaluate (parser filename) '(()()) )
     ))
