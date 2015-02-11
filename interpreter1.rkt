@@ -93,13 +93,7 @@
 (define return 
   (lambda (expression state)
     (cond
-      
-      ((number? expression) expression)
-      ((boolean? expression) expression)
-      ((eq? 'true expression) expression)
-      ((eq? 'false expression) expression)
-      ((not(pair? expression)) (findValue expression state))
-      ((isIntOperator? (operator expression)) (mValue expression state))
+      ((number? (mBool expression state)) (mBool expression state))
       (else
        (if (mBool expression state)
            'true
