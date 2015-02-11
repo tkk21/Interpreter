@@ -16,7 +16,7 @@
       ((number? expression) expression)
       ((not (pair? expression)) (findValue expression state));this expression is a variable
       ((eq? '+ (operator expression)) (+ (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
-      ((eq? '- (operator expression)) (subtraction expression state))
+      ((eq? '- (operator expression)) (mValueSubtraction expression state))
       ((eq? '* (operator expression)) (* (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '/ (operator expression)) (quotient (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '% (operator expression)) (remainder (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
@@ -26,7 +26,7 @@
 (define rightOperand caddr)
 
 ;refactored out the subtraction function so that you don't have if inside cond
-(define subtraction
+(define mValueSubtraction
   (lambda (expression state)
     (if (pair?(cddr expression))
            (- (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)) ;case for a-b
