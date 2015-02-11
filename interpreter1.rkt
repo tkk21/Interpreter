@@ -165,3 +165,21 @@
   (lambda (filename)
     (evaluate (parser filename) '(()()) )
     ))
+
+(define test
+  (lambda (filename num)
+    (eq? (interpret (dotTxt (string-append filename (number->string num)))) (cadr(car(parser (dotTxt(string-append filename (string-append "_answer" (number->string num))))))))
+    ))
+;tests to see if they're correct
+(define testBatch
+  (lambda (filename num)
+    (if (zero? num) 
+        #t
+        (and
+         (test filename num)
+         (testBatch filename (- num 1))
+     ))))
+
+(define dotTxt
+  (lambda (filename)
+    (string-append filename ".txt")))
