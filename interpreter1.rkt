@@ -5,12 +5,6 @@
 ;empty state is going to be '( () ())
 
 (load "simpleParser.scm")
-
-;not done
-;(define typeof
- ; (lambda (expression state)
-  ;  (cond
-   ;   ((not(pair? (leftOperand expression)))))))
       
 ;*mValue function*
 ;code outline
@@ -50,8 +44,8 @@
       ((eq? 'true expression) #t)
       ((eq? 'false expression) #f)
       ((not (pair? expression)) (findValue expression state));means that the expression is a variable
-      ((eq? '== (operator expression)) (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
-      ((eq? '!= (operator expression)) (not (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state))))
+      ((eq? '== (operator expression)) (mBool== expression state))
+      ((eq? '!= (operator expression)) (mBool!= expression state))
       ((eq? '< (operator expression)) (< (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '> (operator expression)) (> (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '<= (operator expression)) (<= (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
@@ -62,13 +56,28 @@
       (else (error 'mBool "illegal operator")))))
       ;(else (mValue expression state));means that the expression is a value expression not a boolean expression       
     
-;not done
-;(define mBool==
- ; (lambda (expression state)
-  ;  (cond
-   ;   ((not(pair? (leftOperand expression))) 
-    ;(operator (leftOperand expression))
-    ;))))
+(define mBool==
+  (lambda (expression state)
+    (cond
+      ((and(eq? (typeof (leftOperand expression)) 'int) (eq? (typeof (rightOperand expression)) 'int)) (eq? (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
+      ((and(eq? (typeof (leftOperand expression)) 'boolean) (eq? (typeof (rightOperand expression)) 'boolean)) (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
+      (else (error 'mBool== comparing int with boolean)))))
+(define mBool!=
+  (lambda (expression state)
+    (not (mBool== expression state))))
+    
+        
+    
+    
+
+(define typeof
+  (lambda (expression state)
+    (cond
+      ((number? (car expression)) 'int) ;numbers
+      ((boolean? (car expression)) 'boolean) ;#t or #f
+      ((not (pair? (cdr expression))) (typeof (findValue (car expression)))) ;variable
+      ((isIntOperator? (operator expression)) 'int) ;int expresions
+      (else 'boolean)))); 'true 'false and boolean expressions
 
 
 ;
