@@ -6,6 +6,12 @@
 
 (load "simpleParser.scm")
 
+;not done
+;(define typeof
+ ; (lambda (expression state)
+  ;  (cond
+   ;   ((not(pair? (leftOperand expression)))))))
+      
 ;*mValue function*
 ;code outline
 ;mValue is going to need +,-,*,/,%, and negative sign
@@ -55,7 +61,15 @@
       ((eq? '! (operator expression)) (not (mBool (leftOperand expression) state)))
       (else (error 'mBool "illegal operator")))))
       ;(else (mValue expression state));means that the expression is a value expression not a boolean expression       
-    )))
+    
+;not done
+;(define mBool==
+ ; (lambda (expression state)
+  ;  (cond
+   ;   ((not(pair? (leftOperand expression))) 
+    ;(operator (leftOperand expression))
+    ;))))
+
 
 ;
 ;*mState functions*
@@ -152,7 +166,7 @@
 ;helper methods to help navigating state easier
 (define pairToState
   (lambda (var value)
-    (cons var (cons value '()))))
+    (cons var (cons value '() ))))
 
 (define nextPair
   (lambda (state)
@@ -170,9 +184,12 @@
 ;empty state is going to be '( () ())
 (define interpret
   (lambda (filename)
-    (evaluate (parser filename) '(()()) )
+    (evaluate (parser filename) (emptyState) )
     ))
 
+(define emptyState
+  (lambda()
+    '(()())))
 (define test
   (lambda (filename num)
     (eq? (interpret (dotTxt (string-append filename (number->string num)))) (interpret (dotTxt(string-append filename (string-append "_answer" (number->string num))))))))
