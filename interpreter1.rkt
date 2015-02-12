@@ -54,8 +54,8 @@
       ((eq? '|| (operator expression)) (or (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '! (operator expression)) (not (mBool (leftOperand expression) state)))
       (else (error 'mBool "illegal operator")))))
-      ;(else (mValue expression state));means that the expression is a value expression not a boolean expression       
-    
+
+;helper method of mBool that checks the type of operands to call either mValue or mBool    
 (define mBool==
   (lambda (expression state)
     (cond
@@ -65,11 +65,7 @@
 (define mBool!=
   (lambda (expression state)
     (not (mBool== expression state))))
-    
-        
-    
-    
-
+;finds the type of the expression and returns the type as an atom
 (define typeof
   (lambda (expression state)
     (cond
