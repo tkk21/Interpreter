@@ -85,8 +85,8 @@
 (define mState
   (lambda (expression state)
     (cond
-      ((eq? 'var (operator expression)) (mStateDeclare (expression state)))
-      ((eq? '= (operator expression)) (mStateAssign (variable expression) (mBool (assignedVal expression) state) state)) ;eg. x = 5
+      ((eq? 'var (operator expression)) (mStateDeclare expression state))
+      ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state)) ;eg. x = 5
       ((eq? 'if (operator expression)) (mStateIf expression state))
       ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state))
       (else (error 'mState "illegal operator")))))
@@ -103,7 +103,7 @@
   (lambda (expression state)
     (cond
       ((eq? (variable expression) 'return) (error 'mStateDeclare "cannot use the token return as variable"))
-      ((pair? (cddr expression)) (mStateAssign (variable expression) (mBool (assignedVal expression) state) (mStateInitialize (variable expression) state)));eg. var x = 5
+      ((pair? (cddr expression)) (mStateAssign (variable expression) (assignedVal expression) (mStateInitialize (variable expression) state)));eg. var x = 5
       (else (mStateInitialize (variable expression) state))))) ; eg. var x
 (define mStateInitialize
   (lambda (var state)
