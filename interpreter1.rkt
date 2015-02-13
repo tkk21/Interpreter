@@ -87,10 +87,7 @@
     (cond
       ((eq? 'var (operator expression)) (mStateDeclare (expression state)))
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (mBool (assignedVal expression) state) state)) ;eg. x = 5
-      ((eq? 'if (operator expression))
-       (if (pair? (cdddr expression))
-           (mStateIfElse (condition expression) (then expression) (else expression) state)
-           (mStateIf (condition expression) (then expression) state )))
+      ((eq? 'if (operator expression)) (mStateIf expression state))
       ((eq? 'return (operator expression)) (return (cadr expression) state))
       (else (error 'mState "illegal operator")))))
 
@@ -127,19 +124,19 @@
         (error 'mState "assigning a value to an undeclared variable"))))
 
 ;mState's helper methods to do if statements
+(define mStateIf
+  (lambda (expression state)
+    (if (pair? (cdddr expression)) ;if expression has an else statement
+        (mStateIfElse (condition expression) (then expression) (else expression) state)
+        (if (mBool (condition expression) state)
+            (mState (then expression) state)
+            state))))
+
 (define mStateIfElse
   (lambda (condition then else state)
     (if (mBool condition state)
         (mState then state) ;just change the state here if I want to do the side effect condition
-        (mState else state)
-    )))
-(define mStateIf
-  (lambda (condition then state)
-    (if (mBool condition state)
-        (mState then state)
-        state
-    )))
-    
+        (mState else state))))
     
 ;returns the result of the function
 ;either returns the int value of the function
