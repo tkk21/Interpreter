@@ -75,7 +75,6 @@
       ((isIntOperator? (operator expression)) 'int) ;int expresions
       (else 'boolean)))); 'true 'false and boolean expressions
 
-
 ;
 ;*mState functions*
 ;code outline
