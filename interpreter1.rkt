@@ -101,9 +101,10 @@
 ;mState's helper method to do variable declaration
 (define mStateDeclare
   (lambda (expression state)
-    (if (pair? (cddr expression))
-        (mStateAssign (variable expression) (mBool (assignedVal expression) state) (mStateInitialize (variable expression) state)) ;eg. var x = 5
-        (mStateInitialize (variable expression) state)))) ; eg. var x
+    (cond
+      ((eq? (variable expression) 'return) (error 'mStateDeclare "cannot use the token return as variable"))
+      ((pair? (cddr expression)) (mStateAssign (variable expression) (mBool (assignedVal expression) state) (mStateInitialize (variable expression) state)));eg. var x = 5
+      (else (mStateInitialize (variable expression) state))))) ; eg. var x
 (define mStateInitialize
   (lambda (var state)
     (pairToState (cons var (vars state)) (cons 0 (vals state))))) ;could use '() to represent uninitialized
