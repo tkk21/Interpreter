@@ -85,10 +85,7 @@
 (define mState
   (lambda (expression state)
     (cond
-      ((eq? 'var (operator expression))
-       (if (pair? (cddr expression))
-           (mStateAssign (variable expression) (mBool (assignedVal expression) state) (mStateDeclare (variable expression) state)) ;eg. var x = 5
-           (mStateDeclare (variable expression) state))) ; eg. var x
+      ((eq? 'var (operator expression)) (mStateDeclare (expression state)))
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (mBool (assignedVal expression) state) state)) ;eg. x = 5
       ((eq? 'if (operator expression))
        (if (pair? (cdddr expression))
@@ -103,12 +100,14 @@
 (define condition cadr)
 (define then caddr)
 (define else cadddr)
-
-(define mStateVar
-  (lambda (variable expression)
     
 ;mState's helper method to do variable declaration
 (define mStateDeclare
+  (lambda (expression state)
+    (if (pair? (cddr expression))
+        (mStateAssign (variable expression) (mBool (assignedVal expression) state) (mStateInitialize (variable expression) state)) ;eg. var x = 5
+        (mStateInitialize (variable expression) state)))) ; eg. var x
+(define mStateInitialize
   (lambda (var state)
     (pairToState (cons var (vars state)) (cons 0 (vals state))))) ;could use '() to represent uninitialized
 
