@@ -59,8 +59,8 @@
 (define mBool==
   (lambda (expression state)
     (cond
-      ((and(eq? (typeof (leftOperand expression)) 'int) (eq? (typeof (rightOperand expression)) 'int)) (eq? (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
-      ((and(eq? (typeof (leftOperand expression)) 'boolean) (eq? (typeof (rightOperand expression)) 'boolean)) (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
+      ((and(eq? (typeof (leftOperand expression) state) 'int) (eq? (typeof (rightOperand expression) state) 'int)) (eq? (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
+      ((and(eq? (typeof (leftOperand expression) state) 'boolean) (eq? (typeof (rightOperand expression) state) 'boolean)) (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       (else (error 'mBool== comparing int with boolean)))))
 (define mBool!=
   (lambda (expression state)
@@ -69,9 +69,9 @@
 (define typeof
   (lambda (expression state)
     (cond
-      ((number? (car expression)) 'int) ;numbers
-      ((boolean? (car expression)) 'boolean) ;#t or #f
-      ((not (pair? (cdr expression))) (typeof (findValue (car expression)))) ;variable
+      ((number? expression) 'int) ;numbers
+      ((boolean? expression) 'boolean) ;#t or #f
+      ((not (pair? expression)) (typeof (findValue expression state) state)) ;variable
       ((isIntOperator? (operator expression)) 'int) ;int expresions
       (else 'boolean)))); 'true 'false and boolean expressions
 
@@ -113,8 +113,8 @@
 (define mStateAssign
   (lambda (var value state)
     (cond ;using cond in case we add more types in the future
-      ((eq? (typeof value) 'int) (mStateStoreValue (variable expression) (mValue (assignedVal expression) state) state))
-      ((eq? (typeof value) 'boolean) (mStateStoreValue (variable expression) (mBool (assignedVal expression) state) state))
+      ((eq? (typeof value state) 'int) (mStateStoreValue var (mValue value state) state))
+      ((eq? (typeof value state) 'boolean) (mStateStoreValue var (mBool value state) state))
       (else (error 'mStateAssign "assigning an invalid type")))))
 (define mStateStoreValue
   (lambda (var value state)
