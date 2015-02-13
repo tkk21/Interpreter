@@ -121,7 +121,7 @@
     (if (pair? (car state))
         (if (eq? (car (vars state)) var)
             (pairToState (vars state) (cons value (cdr (vals state))))
-            (mStateAssign var value (nextPair state)))
+            (mStateStoreValue var value (nextPair state)))
         (error 'mState "assigning a value to an undeclared variable"))))
 
 ;mState's helper methods to do if statements
