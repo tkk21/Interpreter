@@ -181,11 +181,9 @@
 (define vars car)
 (define vals cadr)
 
-;empty state is going to be '( () ())
 (define interpret
   (lambda (filename)
-    (mState (parser filename) (emptyState) )
-    ))
+    (findValue 'return (mState (parser filename) (emptyState) ))))
 
 (define emptyState
   (lambda()
