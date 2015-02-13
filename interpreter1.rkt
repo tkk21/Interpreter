@@ -114,6 +114,12 @@
 ;mState's helper method to do variable assignment
 (define mStateAssign
   (lambda (var value state)
+    (cond ;using cond in case we add more types in the future
+      ((eq? (typeof value) 'int) (mStateStoreValue (variable expression) (mValue (assignedVal expression) state) state))
+      ((eq? (typeof value) 'boolean) (mStateStoreValue (variable expression) (mBool (assignedVal expression) state) state))
+      (else (error 'mStateAssign "assigning an invalid type")))))
+(define mStateStoreValue
+  (lambda (var value state)
     (if (pair? (car state))
         (if (eq? (car (vars state)) var)
             (pairToState (vars state) (cons value (cdr (vals state))))
