@@ -194,7 +194,7 @@
     
 (define interpret
   (lambda (filename)
-    (findValue 'return (mState (parser filename) (emptyState) ))))
+    (findValue 'return (evaluate (parser filename) (emptyState)) )))
 
 (define emptyState
   (lambda()
