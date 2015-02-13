@@ -198,7 +198,7 @@
 
 (define emptyState
   (lambda()
-    '(('return)('null))))
+    '((return)(null))))
 (define test
   (lambda (filename num)
     (eq? (interpret (dotTxt (string-append filename (number->string num)))) (interpret (dotTxt(string-append filename (string-append "_answer" (number->string num))))))))
