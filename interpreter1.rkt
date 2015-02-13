@@ -107,7 +107,7 @@
       (else (mStateInitialize (variable expression) state))))) ; eg. var x
 (define mStateInitialize
   (lambda (var state)
-    (pairToState (cons var (vars state)) (cons 0 (vals state))))) ;could use '() to represent uninitialized
+    (pairToState (cons var (vars state)) (cons 'null (vals state)))))
 
 ;mState's helper method to do variable assignment
 (define mStateAssign
