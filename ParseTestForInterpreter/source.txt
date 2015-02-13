@@ -1,0 +1,110 @@
+Test 1: This code should return 150.
+
+return 150;
+Test 2: This code should return -4.
+
+return 6 * (8 + (5 % 3)) / 11 - 9;
+Test 3: This code should return 10.
+
+var z;
+z = 10;
+return z;
+Test 4: This code should return 16.
+
+var x = (5 * 7 - 3) / 2;
+return x;
+Test 5: This code should return 220.
+
+var x = 10;
+var y = 12 + x;
+return x * y;
+Test 6: This code should return 5.
+
+var x = 5;
+var y = 6;
+var m;
+if (x <= y)
+  m = x;
+else
+  m = y;
+return m;
+Test 7: This code should return 6.
+
+var x = 5;
+var y = 6;
+var m;
+if (x >= y)
+  m = x;
+else
+  m = y;
+return m;
+Test 8: This code should return 10.
+
+var x = 5;
+var y = 6;
+if (x != y)
+  x = 10;
+return x;
+Test 9: This code should return 5.
+
+var x = 5;
+var y = 6;
+if (x == y)
+  x = 10;
+return x;
+Test 10: This code should return -39.
+
+return 6 * -(4 * 2) + 9;
+Test 11: This code should give an error (using before declaring).
+
+var x = 1;
+y = 10 + x;
+return y;
+Test 12: This code should give an error (using before declaring).
+
+var y;
+y = x;
+return y;
+Test 13: This code should give an error (using before assigning). This is not a required error, but it would be nice if you could catch these.
+
+var x;
+var y;
+x = x + y;
+return x;
+Test 14: This code should give an error (redefining). This is not a required error, but it would be nice if you could catch these.
+
+var x = 10;
+var y = 20;
+var x = x + y;
+return x;
+Test 15: This code should return true (not #t).
+
+return (10 > 20) || (5 - 6 < 10) && true;
+Test 16: This code should return 100.
+
+var x = 10;
+var y = 20;
+if (x < y && (x % 2) == 0)
+  return 100;
+else
+  return 200;
+Test 17: This code should return false (not #f).
+
+var x = 100 % 2 == 0;
+var y = 10 >= 20;
+var z;
+if (x || y)
+  z = y;
+else
+  z = x;
+return z;
+Test 18: This code should return true.
+
+var x = 10;
+var y = 20;
+var z = 20 >= 10;
+if (!z || false)
+  z = !z;
+else
+  z = z;
+return z;
