@@ -141,14 +141,12 @@
 ;returns the result of the function
 ;either returns the int value of the function
 ;or returns the boolean value of the function in form of true/false not #t/#f
-(define return 
+(define mStateReturn
   (lambda (expression state)
     (cond
-      ((number? (mBool expression state)) (mBool expression state))
-      (else
-       (if (mBool expression state)
-           'true
-           'false)))))
+      ((eq? (typeof expression state) 'int) (mStateAssign 'return (mValue expression state) state))
+      ((mBool expression state) (mStateAssign 'return 'true state))
+      (else (mStateAssign 'return 'false state)))))
 
 ;needed so that we know the only thing that goes inside (if) is a boolean and not an int
 (define isIntOperator?
@@ -191,12 +189,12 @@
 ;empty state is going to be '( () ())
 (define interpret
   (lambda (filename)
-    (evaluate (parser filename) (emptyState) )
+    (mState (parser filename) (emptyState) )
     ))
 
 (define emptyState
   (lambda()
-    '(()())))
+    '(('return)('null))))
 (define test
   (lambda (filename num)
     (eq? (interpret (dotTxt (string-append filename (number->string num)))) (interpret (dotTxt(string-append filename (string-append "_answer" (number->string num))))))))
