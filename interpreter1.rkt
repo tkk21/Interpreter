@@ -71,6 +71,8 @@
     (cond
       ((number? expression) 'int) ;numbers
       ((boolean? expression) 'boolean) ;#t or #f
+      ((eq? 'true expression) 'boolean)
+      ((eq? 'false expression) 'boolean)
       ((not (pair? expression)) (typeof (findValue expression state) state)) ;variable
       ((isIntOperator? (operator expression)) 'int) ;int expresions
       (else 'boolean)))); 'true 'false and boolean expressions
@@ -116,6 +118,7 @@
       ((eq? (typeof value state) 'int) (mStateStoreValue var (mValue value state) state))
       ((eq? (typeof value state) 'boolean) (mStateStoreValue var (mBool value state) state))
       (else (error 'mStateAssign "assigning an invalid type")))))
+
 (define mStateStoreValue
   (lambda (var value state)
     (cond
