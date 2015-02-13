@@ -163,11 +163,11 @@
 ;finds a value inside the state by using the var to look it up
 (define findValue
   (lambda (var state)
-    (if (pair? (vars state))
-        (if (eq? (car (vars state)) var)
-            (car (vals state))
-            (findValue var (nextPair state)))
-        (error 'findValue "calling an undeclared variable"))))
+    (cond
+      ((not(pair? (vars state))) (error 'findValue "calling an undeclared variable"))
+      ((and (eq? (car (vars state)) var) (eq? 'null (car (vals state)))) (error 'findValue "using a variable before assigning a value"))
+      ((eq? (car (vars state)) var) (car (vals state)))
+      (else (findValue var (nextPair state))))))
 
 ;helper methods to help navigating state easier
 (define pairToState
