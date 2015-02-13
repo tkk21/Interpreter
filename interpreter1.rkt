@@ -118,11 +118,10 @@
       (else (error 'mStateAssign "assigning an invalid type")))))
 (define mStateStoreValue
   (lambda (var value state)
-    (if (pair? (car state))
-        (if (eq? (car (vars state)) var)
-            (pairToState (vars state) (cons value (cdr (vals state))))
-            (mStateStoreValue var value (nextPair state)))
-        (error 'mState "assigning a value to an undeclared variable"))))
+    (cond
+      ((not(pair? (car state))) (error 'mState "assigning a value to an undeclared variable"))
+      ((eq? (car (vars state)) var) (pairToState (vars state) (cons value (cdr (vals state)))))
+      (else (mStateStoreValue var value (nextPair state))))))
 
 ;mState's helper methods to do if statements
 (define mStateIf
