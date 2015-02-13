@@ -88,7 +88,7 @@
       ((eq? 'var (operator expression)) (mStateDeclare (expression state)))
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (mBool (assignedVal expression) state) state)) ;eg. x = 5
       ((eq? 'if (operator expression)) (mStateIf expression state))
-      ((eq? 'return (operator expression)) (return (cadr expression) state))
+      ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state))
       (else (error 'mState "illegal operator")))))
 
 ;abstractions to make mState helper calling eaasier
@@ -180,12 +180,6 @@
 
 (define vars car)
 (define vals cadr)
-
-(define evaluate
-  (lambda (lines state)
-    (if (null? lines) 
-        state
-        (evaluate (cdr lines) (mState (car lines) state)))))
 
 ;empty state is going to be '( () ())
 (define interpret
