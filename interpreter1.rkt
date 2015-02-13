@@ -81,6 +81,32 @@
 ;mState is going to need declare, assign, return, and if
 ;
 
+;the main state method that calls its helper methods
+(define mState
+  (lambda (expression state)
+    (cond
+      ((eq? 'var (operator expression))
+       (if (pair? (cddr expression))
+           (mStateAssign (variable expression) (mBool (assignedVal expression) state) (mStateDeclare (variable expression) state)) ;eg. var x = 5
+           (mStateDeclare (variable expression) state))) ; eg. var x
+      ((eq? '= (operator expression)) (mStateAssign (variable expression) (mBool (assignedVal expression) state) state)) ;eg. x = 5
+      ((eq? 'if (operator expression))
+       (if (pair? (cdddr expression))
+           (mStateIfElse (condition expression) (then expression) (else expression) state)
+           (mStateIf (condition expression) (then expression) state )))
+      ((eq? 'return (operator expression)) (return (cadr expression) state))
+      (else (error 'mState "illegal operator")))))
+
+;abstractions to make mState helper calling eaasier
+(define variable cadr)
+(define assignedVal caddr)
+(define condition cadr)
+(define then caddr)
+(define else cadddr)
+
+(define mStateVar
+  (lambda (variable expression)
+    
 ;mState's helper method to do variable declaration
 (define mStateDeclare
   (lambda (var state)
@@ -132,31 +158,6 @@
     (if (empty? list)
         #f
         (or (eq? a (car list)) (member? a (cdr list))))))
-    
-
-;the main state method that calls its helper methods
-(define mState
-  (lambda (expression state)
-    (cond
-      ((eq? 'var (operator expression))
-       (if (pair? (cddr expression))
-           (mStateAssign (variable expression) (mBool (assignedVal expression) state) (mStateDeclare (variable expression) state)) ;eg. var x = 5
-           (mStateDeclare (variable expression) state))) ; eg. var x
-      ((eq? '= (operator expression)) (mStateAssign (variable expression) (mBool (assignedVal expression) state) state)) ;eg. x = 5
-      ((eq? 'if (operator expression))
-       (if (pair? (cdddr expression))
-           (mStateIfElse (condition expression) (then expression) (else expression) state)
-           (mStateIf (condition expression) (then expression) state )))
-      ((eq? 'return (operator expression)) (return (cadr expression) state))
-      (else (error 'mState "illegal operator")))))
-
-;abstractions to make mState helper calling eaasier
-(define variable cadr)
-(define assignedVal caddr)
-(define condition cadr)
-(define then caddr)
-(define else cadddr)
-
   
 ;finds a value inside the state by using the var to look it up
 (define findValue
