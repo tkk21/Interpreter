@@ -181,6 +181,17 @@
 (define vars car)
 (define vals cadr)
 
+;even though this seems identical to mState, this function is needed because
+;mState doesn't evaluate the statements line by line.
+;eg. ((var z) (= z 10) (return z))
+;would only evaluate (var z) and nothing else
+;Thus, a function is needd to chain these calls to mState
+(define evaluate
+  (lambda (lines state)
+    (if (null? lines)
+        state
+        (evaluate (cdr lines) (mState (car lines) state)))))
+    
 (define interpret
   (lambda (filename)
     (findValue 'return (mState (parser filename) (emptyState) ))))
