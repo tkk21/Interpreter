@@ -179,6 +179,7 @@
 
 ;helper methods to help navigating state easier
 ;turns a pair into a state by itself
+;rename this function to pairToScope
 (define pairToState
   (lambda (var value)
     (cons var (cons value '() ))))
