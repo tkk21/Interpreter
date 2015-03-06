@@ -107,9 +107,10 @@
       ((eq? (variable expression) 'return) (error 'mStateDeclare "cannot use the token return as variable"))
       ((pair? (cddr expression)) (mStateAssign (variable expression) (assignedVal expression) (mStateInitialize (variable expression) state)));eg. var x = 5
       (else (mStateInitialize (variable expression) state))))) ; eg. var x
+
 (define mStateInitialize
   (lambda (var state)
-    (pairToState (cons var (vars state)) (cons 'null (vals state)))))
+    (consPairToState var 'null state)))
 
 ;mState's helper method to do variable assignment
 (define mStateAssign
