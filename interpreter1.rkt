@@ -108,6 +108,8 @@
       ((pair? (cddr expression)) (mStateAssign (variable expression) (assignedVal expression) (mStateInitialize (variable expression) state)));eg. var x = 5
       (else (mStateInitialize (variable expression) state))))) ; eg. var x
 
+;don't need cps, just inserting a new var in front of the state
+;might need cps, will do later
 (define mStateInitialize
   (lambda (var state)
     (consPairToState var 'null state)))
@@ -176,10 +178,11 @@
 (define findValue
   (lambda (var state)
     (cond
-      ((not(pair? (vars state))) (error 'findValue "calling an undeclared variable"))
-      ((and (eq? (car (vars state)) var) (eq? 'null (car (vals state)))) (error 'findValue "using a variable before assigning a value"))
-      ((eq? (car (vars state)) var) (car (vals state)))
-      (else (findValue var (nextPair state))))))
+      ((null? state) (error 'findValue "calling an undeclared variable"))
+      ((not(pair? (vars (scope state)))) (findValue var (nextScope state))) ;var not in current scope
+      ((and (eq? (car (vars (scope state))) var) (eq? 'null (car (vals (scope state))))) (error 'findValue "using a variable before assigning a value"))
+      ((eq? (car (vars (scope state))) var) (car (vals (scope state))))
+      (else (findValue var (nextPair state)))))
 
 
 ;helper methods to help navigating state easier
