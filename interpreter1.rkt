@@ -121,6 +121,15 @@
 
 ;goes through all the scopes to find the value to store in
 ;
+
+(define mStateStoreValue-cps
+  (lambda (var value state return)
+    (cond
+      ((null? state) (error 'mState "assigning a value to an undeclared variable"))
+      ((not (pair? (vars(scope state)))) (mStateStoreValue var value (nextScope state) (lambda (v) (cons (scope state) v))))
+      ((eq? (car (vars (scope state))) var) )
+      (else '()))))
+;      (else (mStateStoreValue var value (nextPair state) (lambda (v) (return (cons ( (var (scope state))
 (define mStateStoreValue
   (lambda (var value state)
     (cond
