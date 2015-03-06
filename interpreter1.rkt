@@ -126,10 +126,9 @@
   (lambda (var value state return)
     (cond
       ((null? state) (error 'mState "assigning a value to an undeclared variable"))
-      ((not (pair? (vars(scope state)))) (mStateStoreValue var value (nextScope state) (lambda (v) (cons (scope state) v))))
-      ((eq? (car (vars (scope state))) var) )
-      (else '()))))
-;      (else (mStateStoreValue var value (nextPair state) (lambda (v) (return (cons ( (var (scope state))
+      ((not (pair? (vars(scope state)))) (return (mStateStoreValue-cps var value (nextScope state) (lambda (v) (cons (scope state) v)))))
+      ((eq? (car (vars (scope state))) var) (return (consPairToState var value (nextPair state))))
+      (else (mStateStoreValue-cps var value (nextPair state) (lambda (v) (return (consPairToState (car(vars(scope state))) (car(vals(scope state))) v))))))))
 (define mStateStoreValue
   (lambda (var value state)
     (cond
