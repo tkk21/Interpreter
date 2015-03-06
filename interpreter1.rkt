@@ -196,7 +196,10 @@
     
 (define interpret
   (lambda (filename)
-    (findValue 'return (evaluate (parser filename) (emptyState)) )))
+    (cond
+      ((eq? (findValue 'return (evaluate (parser filename) (emptyState))) #t) 'true)
+      ((eq? (findValue 'return (evaluate (parser filename) (emptyState))) #f) 'false)
+      (else (findValue 'return (evaluate (parser filename) (emptyState)))))))
 
 (define emptyState
   (lambda()
