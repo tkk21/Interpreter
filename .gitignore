@@ -4,6 +4,7 @@ test0.txt
 *.bak
 *.1
 *.2
+*.3
 parse.txt
 # Windows image file caches
 Thumbs.db
