@@ -178,10 +178,14 @@
 
 
 ;helper methods to help navigating state easier
+;turns a pair into a state by itself
 (define pairToState
   (lambda (var value)
     (cons var (cons value '() ))))
-
+;helper method that adds a pair in front of the state (in the first scope)
+(define consPairToState
+  (lambda (var value state)
+    (cons (cons (cons var (vars (scope state))) (cons (cons value (vals (scope state))) '())) (nextScope state))))
 (define nextPair
   (lambda (state)
     (cons(pairToState (cdr (vars (scope state))) (cdr (vals (scope state)))) (nextScope state) )))
