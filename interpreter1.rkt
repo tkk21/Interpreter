@@ -87,10 +87,12 @@
 (define mState
   (lambda (expression state)
     (cond
-      ((eq? 'var (operator expression)) (mStateDeclare expression state))
+      ((eq? 'var (operator expression)) (mStateDeclare expression state (lambda (v) v)))
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state)) ;eg. x = 5
       ((eq? 'if (operator expression)) (mStateIf expression state))
       ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state))
+      ((eq? 'begin (operator expression)) (mStateBeginBlock (cdr expression) state))
+      ((eq? 'while (operator expression)) (mStateWhile (condition expression) (body expression) state (lambda (v) v)))
       (else (error 'mState "illegal operator")))))
 
 ;abstractions to make mState helper calling eaasier
@@ -99,10 +101,11 @@
 (define condition cadr)
 (define then caddr)
 (define else cadddr)
+(define body caddr)
     
 ;mState's helper method to do variable declaration
 (define mStateDeclare
-  (lambda (expression state)
+  (lambda (expression state return)
     (cond
       ((eq? (variable expression) 'return) (error 'mStateDeclare "cannot use the token return as variable"))
       ((pair? (cddr expression)) (mStateAssign (variable expression) (assignedVal expression) (mStateInitialize (variable expression) state)));eg. var x = 5
@@ -163,6 +166,33 @@
       ((mBool expression state) (mStateAssign 'return 'true state))
       (else (mStateAssign 'return 'false state)))))
 
+(define mStateBeginBlock
+  (lambda (expression state)
+    (mStateEndBlock (evaluate  expression (cons '(() ()) state)))
+    ))
+(define mStateEndBlock
+  (lambda (state)
+    (cdr state)))
+
+(define mStateWhile
+  (lambda (condition body state return)
+    (call/cc (lambda(break)
+    (letrec ((loop (lambda (condition body state)
+                     (if (mBool condition state)
+                         (loop condition body (mState body state))
+                         state))))
+      (loop condition body state))))))
+                     
+;    (if (mBool condition state)
+   ;     (mStateWhile condition body (return state) (lambda (v) (mState body v)))
+ ;       (return state);exit while loop
+  ;      )))
+(define mStateWhileNCPS
+  (lambda (condition body state)
+    (if (mBool condition state)
+        (mStateWhileNCPS condition body (mState body state))
+        state)))
+    
 ;needed so that we know the only thing that goes inside (if) is a boolean and not an int
 (define isIntOperator?
   (lambda (op)
@@ -182,7 +212,7 @@
       ((not(pair? (vars (scope state)))) (findValue var (nextScope state))) ;var not in current scope
       ((and (eq? (car (vars (scope state))) var) (eq? 'null (car (vals (scope state))))) (error 'findValue "using a variable before assigning a value"))
       ((eq? (car (vars (scope state))) var) (car (vals (scope state))))
-      (else (findValue var (nextPair state)))))
+      (else (findValue var (nextPair state))))))
 
 
 ;helper methods to help navigating state easier
