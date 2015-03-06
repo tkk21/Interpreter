@@ -119,12 +119,17 @@
       ((eq? (typeof value state) 'boolean) (mStateStoreValue var (mBool value state) state))
       (else (error 'mStateAssign "assigning an invalid type")))))
 
+;goes through all the scopes to find the value to store in
+;
 (define mStateStoreValue
   (lambda (var value state)
     (cond
-      ((not(pair? (car state))) (error 'mState "assigning a value to an undeclared variable"))
-      ((eq? (car (vars state)) var) (pairToState (vars state) (cons value (cdr (vals state)))))
+      ((null? state) (error 'mState "assigning a value to an undeclared variable"))
+      ((not (pair? (scope state))) (cons (scope state) (mStateStoreValue var value (nextScope state) ))) ;not in first scope so look at next scope
+      ((eq? (car (vars (scope state))) var) (cons (pairToState (vars (scope state)) (cons value (cdr (vals (scope state))))) (nextScope state)))
       (else (mStateStoreValue var value (nextPair state))))))
+(define scope car)
+(define nextScope cdr)
 
 ;mState's helper methods to do if statements
 (define mStateIf
@@ -171,6 +176,7 @@
       ((eq? (car (vars state)) var) (car (vals state)))
       (else (findValue var (nextPair state))))))
 
+
 ;helper methods to help navigating state easier
 (define pairToState
   (lambda (var value)
@@ -178,7 +184,7 @@
 
 (define nextPair
   (lambda (state)
-    (pairToState (cdr (vars state)) (cdr (vals state)))))
+    (cons(pairToState (cdr (vars (scope state))) (cdr (vals (scope state)))) (nextScope state) )))
 
 (define vars car)
 (define vals cadr)
