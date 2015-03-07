@@ -243,7 +243,7 @@
   (lambda (lines state continue break)
     (if (null? lines)
         state
-        (evaluate (cdr lines) (mState (car lines) state)))))
+        (mStateEvaluate (cdr lines) (mState (car lines) state  continue break) continue break))))
     
 (define interpret
   (lambda (filename)
