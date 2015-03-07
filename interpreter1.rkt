@@ -237,8 +237,10 @@
 ;eg. ((var z) (= z 10) (return z))
 ;would only evaluate (var z) and nothing else
 ;Thus, a function is needd to chain these calls to mState
-(define evaluate
-  (lambda (lines state)
+
+;evaluates all the lines, updating state per line
+(define mStateEvaluate
+  (lambda (lines state continue break)
     (if (null? lines)
         state
         (evaluate (cdr lines) (mState (car lines) state)))))
