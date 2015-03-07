@@ -85,14 +85,16 @@
 
 ;the main state method that calls its helper methods
 (define mState
-  (lambda (expression state)
+  (lambda (expression state continue break)
     (cond
-      ((eq? 'var (operator expression)) (mStateDeclare expression state (lambda (v) v)))
-      ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state)) ;eg. x = 5
-      ((eq? 'if (operator expression)) (mStateIf expression state))
-      ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state))
-      ((eq? 'begin (operator expression)) (mStateBeginBlock (cdr expression) state))
-      ((eq? 'while (operator expression)) (mStateWhile (condition expression) (body expression) state (lambda (v) v)))
+      ((eq? 'var (operator expression)) (mStateDeclare expression state continue break))
+      ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state continue break)) ;eg. x = 5
+      ((eq? 'if (operator expression)) (mStateIf expression state continue break))
+      ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state continue break))
+      ((eq? 'begin (operator expression)) (mStateBeginBlock (cdr expression) state continue break))
+      ((eq? 'while (operator expression)) (mStateWhile (condition expression) (body expression) state))
+      ((eq? 'continue (operator expression)) (mStateContinue state continue))
+      ((eq? 'break (operator expression)) (mStateBreak state break))
       (else (error 'mState "illegal operator")))))
 
 ;abstractions to make mState helper calling eaasier
@@ -105,29 +107,27 @@
     
 ;mState's helper method to do variable declaration
 (define mStateDeclare
-  (lambda (expression state return)
+  (lambda (expression state continue break)
     (cond
       ((eq? (variable expression) 'return) (error 'mStateDeclare "cannot use the token return as variable"))
-      ((pair? (cddr expression)) (mStateAssign (variable expression) (assignedVal expression) (mStateInitialize (variable expression) state)));eg. var x = 5
-      (else (mStateInitialize (variable expression) state))))) ; eg. var x
+      ((pair? (cddr expression)) (mStateAssign (variable expression) (assignedVal expression) (mStateInitialize (variable expression) state continue break) continue break));eg. var x = 5
+      (else (mStateInitialize (variable expression) state continue break))))) ; eg. var x
 
 ;don't need cps, just inserting a new var in front of the state
 ;might need cps, will do later
 (define mStateInitialize
-  (lambda (var state)
+  (lambda (var state continue break)
     (consPairToState var 'null state)))
 
 ;mState's helper method to do variable assignment
 (define mStateAssign
-  (lambda (var value state)
+  (lambda (var value state continue break)
     (cond ;using cond in case we add more types in the future
       ((eq? (typeof value state) 'int) (mStateStoreValue var (mValue value state) state))
       ((eq? (typeof value state) 'boolean) (mStateStoreValue var (mBool value state) state))
       (else (error 'mStateAssign "assigning an invalid type")))))
 
 ;goes through all the scopes to find the value to store in
-;
-
 (define mStateStoreValue-cps
   (lambda (var value state return)
     (cond
@@ -143,28 +143,28 @@
 
 ;mState's helper methods to do if statements
 (define mStateIf
-  (lambda (expression state)
+  (lambda (expression state continue break)
     (if (pair? (cdddr expression)) ;if expression has an else statement
-        (mStateIfElse (condition expression) (then expression) (else expression) state)
+        (mStateIfElse (condition expression) (then expression) (else expression) state continue break)
         (if (mBool (condition expression) state)
-            (mState (then expression) state)
+            (mState (then expression) state continue break)
             state))))
 
 (define mStateIfElse
-  (lambda (condition then else state)
+  (lambda (condition then else state continue break)
     (if (mBool condition state)
-        (mState then state) ;just change the state here if I want to do the side effect condition
-        (mState else state))))
+        (mState then state continue break) ;just change the state here if I want to do the side effect condition
+        (mState else state continue break))))
     
 ;returns the result of the function
 ;either returns the int value of the function
 ;or returns the boolean value of the function in form of true/false not #t/#f
 (define mStateReturn
-  (lambda (expression state)
+  (lambda (expression state continue break)
     (cond
-      ((eq? (typeof expression state) 'int) (mStateAssign 'return (mValue expression state) state))
-      ((mBool expression state) (mStateAssign 'return 'true state))
-      (else (mStateAssign 'return 'false state)))))
+      ((eq? (typeof expression state) 'int) (mStateAssign 'return (mValue expression state) state continue break))
+      ((mBool expression state) (mStateAssign 'return 'true state continue break))
+      (else (mStateAssign 'return 'false state continue break)))))
 
 (define mStateBeginBlock
   (lambda (expression state)
