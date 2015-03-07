@@ -167,8 +167,9 @@
       (else (mStateAssign 'return 'false state continue break)))))
 
 (define mStateBeginBlock
-  (lambda (expression state)
-    (mStateEndBlock (evaluate  expression (cons '(() ()) state)))
+  (lambda (expression state continue break)
+    (mStateEndBlock (call/cc (lambda (continue)
+                               (mStateEvaluate  expression (cons '(() ()) state) continue break))))
     ))
 (define mStateEndBlock
   (lambda (state)
