@@ -248,9 +248,9 @@
 (define interpret
   (lambda (filename)
     (cond
-      ((eq? (findValue 'return (evaluate (parser filename) (emptyState))) #t) 'true)
-      ((eq? (findValue 'return (evaluate (parser filename) (emptyState))) #f) 'false)
-      (else (findValue 'return (evaluate (parser filename) (emptyState)))))))
+      ((eq? (findValue 'return (mStateEvaluate (parser filename) (emptyState) (lambda (v) v) (lambda (v) v))) #t) 'true)
+      ((eq? (findValue 'return (mStateEvaluate (parser filename) (emptyState) (lambda (v) v) (lambda (v) v))) #f) 'false)
+      (else (findValue 'return (mStateEvaluate (parser filename) (emptyState) (lambda (v) v) (lambda (v) v)))))))
 
 (define emptyState
   (lambda()
