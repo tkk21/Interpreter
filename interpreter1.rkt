@@ -175,24 +175,26 @@
     (cdr state)))
 
 (define mStateWhile
-  (lambda (condition body state return)
+  (lambda (condition body state)
     (call/cc (lambda(break)
     (letrec ((loop (lambda (condition body state)
                      (if (mBool condition state)
-                         (loop condition body (mState body state))
-                         state))))
-      (loop condition body state))))))
-                     
-;    (if (mBool condition state)
-   ;     (mStateWhile condition body (return state) (lambda (v) (mState body v)))
- ;       (return state);exit while loop
-  ;      )))
-(define mStateWhileNCPS
-  (lambda (condition body state)
-    (if (mBool condition state)
-        (mStateWhileNCPS condition body (mState body state))
-        state)))
-    
+                         (loop condition body (mState body state (lambda (v) v) break) )
+                         state))
+                   ))
+      (loop condition body state)
+      )))))
+
+;stop and go back to beginning of the loop
+(define mStateContinue
+  (lambda (state continue)
+    (continue state)))
+
+;stop and exit the loop
+(define mStateBreak
+  (lambda (state break)
+    (break (mStateEndBlock state)) ))
+
 ;needed so that we know the only thing that goes inside (if) is a boolean and not an int
 (define isIntOperator?
   (lambda (op)
