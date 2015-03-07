@@ -84,6 +84,7 @@
 ;
 
 ;the main state method that calls its helper methods
+;only processes one line and return state
 (define mState
   (lambda (expression state continue break)
     (cond
@@ -135,9 +136,11 @@
       ((not (pair? (vars(scope state)))) (return (mStateStoreValue-cps var value (nextScope state) (lambda (v) (cons (scope state) v)))))
       ((eq? (car (vars (scope state))) var) (return (consPairToState var value (nextPair state))))
       (else (mStateStoreValue-cps var value (nextPair state) (lambda (v) (return (consPairToState (car(vars(scope state))) (car(vals(scope state))) v))))))))
+;version of mStateStoreValue that has lambda (v) v in it already
 (define mStateStoreValue
   (lambda (var value state)
     (mStateStoreValue-cps var value state (lambda (v) v))))
+;abstractions for scope
 (define scope car)
 (define nextScope cdr)
 
@@ -166,15 +169,21 @@
       ((mBool expression state) (mStateAssign 'return 'true state continue break))
       (else (mStateAssign 'return 'false state continue break)))))
 
+;adds a new layer to state
+;if a continue is seen, end the layer premateurly (uses call/cc to continue)
+;ends the layer when interpreter is done evaluating lines
 (define mStateBeginBlock
   (lambda (expression state continue break)
     (mStateEndBlock (call/cc (lambda (continue)
                                (mStateEvaluate  expression (cons '(() ()) state) continue break))))
     ))
+;gets rid of the layer
 (define mStateEndBlock
   (lambda (state)
     (cdr state)))
 
+;while loop
+;uses call/cc to break
 (define mStateWhile
   (lambda (condition body state)
     (call/cc (lambda(break)
