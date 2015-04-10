@@ -4,7 +4,7 @@
 ;for example '( (x y z) (4 8 #f))
 ;empty state is going to be '( () ())
 
-(load "simpleParser.scm")
+(load "functionParser.scm")
       
 ;*mValue function*
 ;code outline
@@ -14,6 +14,7 @@
   (lambda (expression state)
     (cond
       ((number? expression) expression)
+      ;((eq? 'funcall (operator expression) (
       ((not (pair? expression)) (findValue expression state));this expression is a variable
       ((eq? '+ (operator expression)) (+ (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '- (operator expression)) (mValueSubtraction expression state))
@@ -114,14 +115,14 @@
     (consPairToState (name expression) (box (cddr expression)) state)))
 
 (define paramList car)
-(define body cadr)
+(define fxnbody cadr)
 
 ;calls the function and returns the value related to return.
 ;if the function does not return something, then void is returned
 (define functionCall
   (lambda (expression state continue break)
-    (findValue 'return 
-               (evaluateBody (addParamToBody (paramList (findValue (name expression) state)) (paramList expression) (body (findValue (name expression) state)))
+    (findValue 'return
+               (evaluateBody (addParamToBody (paramList (findValue (name expression) state)) (paramList expression) (fxnbody (findValue (name expression) state)))
                              (functionScope state) continue break))))
 (define functionScope
   (lambda (state)
@@ -295,7 +296,7 @@
 
 ;an outer evaluater 
 (define mStateGlobal
-  (lambda (lines state)
+  (lambda (lines state continue break)
     (if (null? lines)
         state
         (mStateGlobal (cdr lines) (mState (car lines) state continue break) continue break))))
@@ -317,9 +318,10 @@
 (define interpret
   (lambda (filename)
     (cond
-      ((eq? (findValue 'return (mStateEvaluate (parser filename) (emptyState) (lambda (v) v) (lambda (v) v))) #t) 'true)
-      ((eq? (findValue 'return (mStateEvaluate (parser filename) (emptyState) (lambda (v) v) (lambda (v) v))) #f) 'false)
-      (else (findValue 'return (mStateEvaluate (parser filename) (emptyState) (lambda (v) v) (lambda (v) v)))))))
+      ;(functionCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState) (lambda (v) v) (lambda (v) v)) (lambda (v) v) (lambda (v) v))
+      ((eq? (functionCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)(lambda (v) v) (lambda (v) v)) (lambda (v) v) (lambda (v) v)) #t) 'true)
+      ((eq? (functionCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)(lambda (v) v) (lambda (v) v)) (lambda (v) v) (lambda (v) v)) #f) 'false)
+      (else (functionCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)(lambda (v) v) (lambda (v) v)) (lambda (v) v) (lambda (v) v))))))
 
 (define emptyState
   (lambda()
