@@ -115,7 +115,6 @@
       (else (mStateInitialize (variable expression) state continue break))))) ; eg. var x
 
 ;don't need cps, just inserting a new var in front of the state
-;might need cps, will do later
 (define mStateInitialize
   (lambda (var state continue break)
     (consPairToState var (box 'null) state)))
@@ -271,7 +270,7 @@
 (define test
   (lambda (filename num)
     (eq? (interpret (dotTxt (string-append filename (number->string num)))) (interpret (dotTxt(string-append filename (string-append "_answer" (number->string num))))))))
-    
+
 ;tests to see if they're correct
 (define testBatch
   (lambda (filename num)
