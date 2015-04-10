@@ -118,14 +118,14 @@
 ;might need cps, will do later
 (define mStateInitialize
   (lambda (var state continue break)
-    (consPairToState var 'null state)))
+    (consPairToState var (box 'null) state)))
 
 ;mState's helper method to do variable assignment
 (define mStateAssign
   (lambda (var value state continue break)
     (cond ;using cond in case we add more types in the future
-      ((eq? (typeof value state) 'int) (mStateStoreValue var (mValue value state) state))
-      ((eq? (typeof value state) 'boolean) (mStateStoreValue var (mBool value state) state))
+      ((eq? (typeof value state) 'int) (mStateStoreValue var (box (mValue value state)) state))
+      ((eq? (typeof value state) 'boolean) (mStateStoreValue var (box(mBool value state)) state))
       (else (error 'mStateAssign "assigning an invalid type")))))
 
 ;goes through all the scopes to find the value to store in
@@ -223,7 +223,7 @@
       ((null? state) (error 'findValue "calling an undeclared variable"))
       ((not(pair? (vars (scope state)))) (findValue var (nextScope state))) ;var not in current scope
       ((and (eq? (car (vars (scope state))) var) (eq? 'null (car (vals (scope state))))) (error 'findValue "using a variable before assigning a value"))
-      ((eq? (car (vars (scope state))) var) (car (vals (scope state))))
+      ((eq? (car (vars (scope state))) var) (unbox(car (vals (scope state)))))
       (else (findValue var (nextPair state))))))
 
 
