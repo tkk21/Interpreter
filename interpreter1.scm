@@ -88,6 +88,7 @@
 (define mState
   (lambda (expression state continue break)
     (cond
+      ((eq? 'function (operator expression)) (mStateFunctionDeclare expression state continue break))
       ((eq? 'var (operator expression)) (mStateDeclare expression state continue break))
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state continue break)) ;eg. x = 5
       ((eq? 'if (operator expression)) (mStateIf expression state continue break))
@@ -105,6 +106,12 @@
 (define then caddr)
 (define else cadddr)
 (define body caddr)
+
+(define name cadr)
+
+(define mStateFunctionDeclare
+  (lambda (expression state continue break)
+    (consPairToState (name expression) (box (cddr expression)) state)))
     
 ;mState's helper method to do variable declaration
 (define mStateDeclare
@@ -255,7 +262,7 @@
     (if (null? lines)
         state
         (mStateEvaluate (cdr lines) (mState (car lines) state  continue break) continue break))))
-    
+
 (define interpret
   (lambda (filename)
     (cond
@@ -280,7 +287,7 @@
          (test filename num)
          (testBatch filename (- num 1))
      ))))
-
+    
 (define dotTxt
   (lambda (filename)
     (string-append filename ".txt")))
