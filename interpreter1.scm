@@ -112,7 +112,50 @@
 (define mStateFunctionDeclare
   (lambda (expression state continue break)
     (consPairToState (name expression) (box (cddr expression)) state)))
+
+(define paramList car)
+(define body cadr)
+
+;calls the function and returns the value related to return.
+;if the function does not return something, then void is returned
+(define functionCall
+  (lambda (expression state continue break)
+    (findValue 'return 
+               (evaluateBody (addParamToBody (paramList (findValue (name expression) state)) (paramList expression) (body (findValue (name expression) state)))
+                             (functionScope state) continue break))))
+(define functionScope
+  (lambda (state)
+    (cons '((return)(void)) state)))
     
+;since global variables are in a box, no need to return a state
+;just return the value
+;if no return value, return "void"
+(define evaluateBody
+  (lambda (body state continue break)
+    (if (null? body)
+        state
+        (evaluateBody (cdr body) (mState (car body) state continue break) continue break))))
+    
+;adds the param of the function into the body
+;for easier block evaluation
+(define addParamToBody
+  (lambda (paramList valueList body)
+    (if (null? paramList)
+        body
+        (addParamToBody (cdr paramList) (cdr valueList) (cons (constructParamAsExpression (car paramList) (car valueList)) body)))))
+;turns a param name and its value into an expression
+(define constructParamAsExpression
+  (lambda (param value)
+    (cons 'var (cons (car paramList) (cons (car valueList) '())))))
+     ;(cons 'var (cons 'a (cons 5 '())))
+;makes new scope for the new function
+;adds in the parameters
+(define mStateParam
+  (lambda (paramList valueList state continue break)
+    (if (null? paramList)
+        state
+        (mStateParam (cdr paramList) (cdr valueList) (mStateAssign (car paramList) (car valueList) (mStateDeclare (car paramList) state continue break) continue break) continue break))))
+
 ;mState's helper method to do variable declaration
 (define mStateDeclare
   (lambda (expression state continue break)
@@ -250,6 +293,14 @@
 (define vars car)
 (define vals cadr)
 
+;an outer evaluater 
+(define mStateGlobal
+  (lambda (lines state)
+    (if (null? lines)
+        state
+        (mStateGlobal (cdr lines) (mState (car lines) state continue break) continue break))))
+
+(define type car)
 ;even though this seems identical to mState, this function is needed because
 ;mState doesn't evaluate the statements line by line.
 ;eg. ((var z) (= z 10) (return z))
@@ -277,7 +328,7 @@
 (define test
   (lambda (filename num)
     (eq? (interpret (dotTxt (string-append filename (number->string num)))) (interpret (dotTxt(string-append filename (string-append "_answer" (number->string num))))))))
-
+    
 ;tests to see if they're correct
 (define testBatch
   (lambda (filename num)
@@ -287,7 +338,7 @@
          (test filename num)
          (testBatch filename (- num 1))
      ))))
-    
+
 (define dotTxt
   (lambda (filename)
     (string-append filename ".txt")))
