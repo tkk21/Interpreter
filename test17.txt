@@ -1,9 +1,21 @@
 
-var x = 100 % 2 == 0;
-var y = 10 >= 20;
-var z;
-if (x || y)
-  z = y;
-else
-  z = x;
-return z;
+function f(x) {
+  function g(x) {
+    var b;
+    b = x;
+    return 0;
+  }
+
+  function h(x) {
+    b = x;
+    return 1;
+  }
+
+  return g(x) + h(x);
+}
+
+function main() {
+  return f(10);
+}
+Additional Tests For Those Doing the Extra Challenge
+
