@@ -14,13 +14,13 @@
   (lambda (expression state)
     (cond
       ((number? expression) expression)
-      ;((eq? 'funcall (operator expression) (
       ((not (pair? expression)) (findValue expression state));this expression is a variable
       ((eq? '+ (operator expression)) (+ (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '- (operator expression)) (mValueSubtraction expression state))
       ((eq? '* (operator expression)) (* (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '/ (operator expression)) (quotient (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '% (operator expression)) (remainder (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
+      ((eq? 'funcall (operator expression)) (functionCall expression state))
       (else (error 'mValue "illegal operator"))))) 
 (define operator car)
 (define leftOperand cadr)
@@ -36,7 +36,7 @@
 ;*mBool function*
 ;code outline
 ;mBool is going to need ==, !=, <, >, <=, >=, and &&, ||, !
-;not going to worry about cases where 3<true
+;not going to worry about cseases where 3<true
 ;if we're doing something like x&&true, x better be a boolean or we're not worrying
 (define mBool
   (lambda (expression state)
@@ -54,6 +54,7 @@
       ((eq? '&& (operator expression)) (and (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '|| (operator expression)) (or (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
       ((eq? '! (operator expression)) (not (mBool (leftOperand expression) state)))
+      ((eq? 'funcall (operator expression)) (functionCall expression state))
       (else (error 'mBool "illegal operator")))))
 
 ;helper method of mBool that checks the type of operands to call either mValue or mBool    
@@ -72,6 +73,7 @@
     (cond
       ((number? expression) 'int) ;numbers
       ((boolean? expression) 'boolean) ;#t or #f
+      ((eq? 'funcall expression) (typeof (functionCall expression state) state))
       ((eq? 'true expression) 'boolean)
       ((eq? 'false expression) 'boolean)
       ((not (pair? expression)) (typeof (findValue expression state) state)) ;variable
@@ -98,6 +100,7 @@
       ((eq? 'while (operator expression)) (mStateWhile (condition expression) (body expression) state))
       ((eq? 'continue (operator expression)) (mStateContinue state continue))
       ((eq? 'break (operator expression)) (mStateBreak state break))
+      ((eq? 'funcall (operator expression)) (begin (functionCall expression state)state))
       (else (error 'mState "illegal operator")))))
 
 ;abstractions to make mState helper calling eaasier
@@ -116,38 +119,46 @@
 
 (define paramList car)
 (define fxnbody cadr)
+(define valueList cddr)
 
 ;calls the function and returns the value related to return.
 ;if the function does not return something, then void is returned
 (define functionCall
-  (lambda (expression state continue break)
+  (lambda (expression state)
     (findValue 'return
-               (evaluateBody (addParamToBody (paramList (findValue (name expression) state)) (paramList expression) (fxnbody (findValue (name expression) state)))
-                             (functionScope state) continue break))))
+               (evaluateBody (addParamToBody (paramList (findValue (name expression) state)) (valueList expression) (fxnbody (findValue (name expression) state)) state)
+                             (functionScope state)))))
 (define functionScope
   (lambda (state)
-    (cons '((return)(void)) state)))
+    (cons (pairToState '(return) (cons (box 'void) '())) (cdr state))))
     
 ;since global variables are in a box, no need to return a state
 ;just return the value
 ;if no return value, return "void"
 (define evaluateBody
-  (lambda (body state continue break)
-    (if (null? body)
-        state
-        (evaluateBody (cdr body) (mState (car body) state continue break) continue break))))
+  (lambda (body state)
+    (call/cc (lambda (return)
+               (letrec ((eval (lambda (body state)
+                                     (if (null? body)
+                                         state
+                                         (eval (cdr body) (mState (car body) state (lambda(v) v) return))))))
+                 (eval body state))))))
     
 ;adds the param of the function into the body
 ;for easier block evaluation
 (define addParamToBody
-  (lambda (paramList valueList body)
-    (if (null? paramList)
-        body
-        (addParamToBody (cdr paramList) (cdr valueList) (cons (constructParamAsExpression (car paramList) (car valueList)) body)))))
+  (lambda (paramList valueList body state)
+    (cond
+      ((and (null? paramList) (pair? valueList)) (error 'functionCall "inputted more values than there are parameters"))
+      ((null? paramList) body)
+      (else(addParamToBody (cdr paramList) (cdr valueList) (cons (constructParamAsExpression (car paramList) (car valueList) state) body) state)))))
 ;turns a param name and its value into an expression
 (define constructParamAsExpression
-  (lambda (param value)
-    (cons 'var (cons (car paramList) (cons (car valueList) '())))))
+  (lambda (param value state)
+    (cond
+      ((eq? 'int (typeof value state)) (cons 'var (cons param (cons (mValue value state) '()))))
+      ((eq? 'boolean (typeof value state)) (cons 'var (cons param (cons (mBool value state) '()))))
+    )))
      ;(cons 'var (cons 'a (cons 5 '())))
 ;makes new scope for the new function
 ;adds in the parameters
@@ -174,9 +185,20 @@
 (define mStateAssign
   (lambda (var value state continue break)
     (cond ;using cond in case we add more types in the future
-      ((eq? (typeof value state) 'int) (mStateStoreValue var (box (mValue value state)) state))
-      ((eq? (typeof value state) 'boolean) (mStateStoreValue var (box(mBool value state)) state))
+      ((eq? (typeof value state) 'int) (mStateSetBox var (mValue value state) state))
+      ((eq? (typeof value state) 'boolean) (mStateSetBox var (mBool value state) state))
       (else (error 'mStateAssign "assigning an invalid type")))))
+
+(define mStateSetBox-cps
+  (lambda (var value state cps)
+    (cond
+      ((null? state) (error 'mState "assigning a value to an undeclared variable"))
+      ((not (pair? (vars(scope state)))) (cps(mStateSetBox-cps var value (nextScope state) (lambda (v) (cps(cons (scope state) v)))))) ; not in this scope
+      ((eq? (car (vars (scope state))) var) (begin (set-box! (car(vals(scope state))) value) (cps state))) ;found it
+      (else (mStateSetBox-cps var value (nextPair state) (lambda (v) (cps (consPairToState (car(vars(scope state))) (car(vals(scope state))) v)))))))) ;not this one
+(define mStateSetBox
+  (lambda (var value state)
+    (mStateSetBox-cps var value state (lambda (v) v))))
 
 ;goes through all the scopes to find the value to store in
 (define mStateStoreValue-cps
@@ -215,9 +237,13 @@
 (define mStateReturn
   (lambda (expression state continue break)
     (cond
-      ((eq? (typeof expression state) 'int) (mStateAssign 'return (mValue expression state) state continue break))
-      ((mBool expression state) (mStateAssign 'return 'true state continue break))
-      (else (mStateAssign 'return 'false state continue break)))))
+      ((and (pair? expression) (eq? (car expression) 'funcall)) (break (mStateAssign 'return (functionCall expression state) state continue break)))
+      ((eq? (typeof expression state) 'int) (break(mStateAssign 'return (mValue expression state) state continue break)))
+      ((eq? (typeof expression state) 'boolean)
+       (if (mBool expression state)
+           (break (mStateAssign 'return 'true state continue break))
+           (break (mStateAssign 'return 'false state continue break))))
+      (else (error 'mStateReturn "unknown return type")))))
 
 ;adds a new layer to state
 ;if a continue is seen, end the layer premateurly (uses call/cc to continue)
@@ -239,7 +265,7 @@
     (call/cc (lambda(break)
     (letrec ((loop (lambda (condition body state)
                      (if (mBool condition state)
-                         (loop condition body (mState body state (lambda (v) v) break) )
+                         (loop condition body (mState body state (lambda (v) v) break))
                          state))
                    ))
       (loop condition body state)
@@ -296,10 +322,10 @@
 
 ;an outer evaluater 
 (define mStateGlobal
-  (lambda (lines state continue break)
+  (lambda (lines state)
     (if (null? lines)
         state
-        (mStateGlobal (cdr lines) (mState (car lines) state continue break) continue break))))
+        (mStateGlobal (cdr lines) (mState (car lines) state (lambda (v) v) (lambda (v) v))))))
 
 (define type car)
 ;even though this seems identical to mState, this function is needed because
@@ -314,18 +340,21 @@
     (if (null? lines)
         state
         (mStateEvaluate (cdr lines) (mState (car lines) state  continue break) continue break))))
-
+(define mainCall
+  (lambda (expression state)
+    (findValue 'return
+               (evaluateBody (fxnbody (findValue (name expression) state)) (cons (pairToState '(return) (cons(box 'void)'())) state)))))
 (define interpret
   (lambda (filename)
     (cond
-      ;(functionCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState) (lambda (v) v) (lambda (v) v)) (lambda (v) v) (lambda (v) v))
-      ((eq? (functionCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)(lambda (v) v) (lambda (v) v)) (lambda (v) v) (lambda (v) v)) #t) 'true)
-      ((eq? (functionCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)(lambda (v) v) (lambda (v) v)) (lambda (v) v) (lambda (v) v)) #f) 'false)
-      (else (functionCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)(lambda (v) v) (lambda (v) v)) (lambda (v) v) (lambda (v) v))))))
+      ((eq? (mainCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)) ) #t) 'true)
+      ((eq? (mainCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)) ) #f) 'false)
+      (else (mainCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)) )))))
 
 (define emptyState
   (lambda()
-    '(((return)(null)))
+    (cons (pairToState '(return) (cons(box 'void)'())) '())
+    ;'(((return)(null)))
     ))
 (define test
   (lambda (filename num)

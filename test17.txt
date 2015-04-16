@@ -17,5 +17,3 @@ function f(x) {
 function main() {
   return f(10);
 }
-Additional Tests For Those Doing the Extra Challenge
-
