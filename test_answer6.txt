@@ -1,1 +1,1 @@
-return 115;
+return 30;
