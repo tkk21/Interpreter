@@ -4,7 +4,7 @@
 ;for example '( (x y z) (4 8 #f))
 ;empty state is going to be '( () ())
 
-(load "functionParser.scm")
+(load "classParser.scm")
       
 ;*mValue function*
 ;code outline
@@ -92,6 +92,8 @@
   (lambda (expression state continue break)
     (cond
       ((eq? 'function (operator expression)) (mStateFunctionDeclare expression state continue break))
+      ((eq? 'static-var (operator expression)) (mStateDeclare expression state continue break))
+      ((eq? 'static-function (operator expression)) (mStateFunctionDeclare expression state continue break))
       ((eq? 'var (operator expression)) (mStateDeclare expression state continue break))
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state continue break)) ;eg. x = 5
       ((eq? 'if (operator expression)) (mStateIf expression state continue break))
@@ -117,6 +119,16 @@
   (lambda (expression state continue break)
     (consPairToState (name expression) (box (cddr expression)) state)))
 
+(define parseExtends caddr)
+(define parseClassBody cadddr)
+
+(define classDeclare
+  (lambda (expression classState)
+    (if (pair? (parseExtends expression)) ;this class extends something
+        (cons (list (name expression) (name (parseExtends expression)) (mStateGlobal (parseClassBody expression) (emptyState))) classState)
+        (cons (list (name expression) 'Object (mStateGlobal (parseClassBody expression) (emptyState))) classState)
+        )))
+     
 (define paramList car)
 (define fxnbody cadr)
 (define valueList cddr)
@@ -344,12 +356,44 @@
   (lambda (expression state)
     (findValue 'return
                (evaluateBody (fxnbody (findValue (name expression) state)) (cons (pairToState '(return) (cons(box 'void)'())) state)))))
-(define interpret
+
+(define interpret-func
   (lambda (filename)
     (cond
       ((eq? (mainCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)) ) #t) 'true)
       ((eq? (mainCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)) ) #f) 'false)
       (else (mainCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)) )))))
+
+(define declareAllClasses
+  (lambda (lines classState)
+    (if (pair? lines)
+        (declareAllClasses (cdr lines) (classDeclare (car lines) classState))
+        classState)))
+
+(define classBody caddr)
+; class is (name parent state)
+(define lookupClassBody
+  (lambda (className classState)
+    (cond
+      ((not(pair? classState)) (error 'lookupClass "class not found"))
+      ((eq? className (car (car classState))) (classBody(car classState)))
+      (else (lookupClass className (cdr classState))))))
+(define fixBoolean
+  (lambda (val)
+    (if (boolean? val)
+        (booleanToString val)
+        val)))
+
+(define booleanToString
+  (lambda (bool)
+    (if bool
+        'true
+        'false)))
+
+(define interpret
+  (lambda (filename className)
+    (fixBoolean (mainCall '(funcall main ()) (lookupClassBody className (declareAllClasses (parser filename) '()))))
+    ))
 
 (define emptyState
   (lambda()
