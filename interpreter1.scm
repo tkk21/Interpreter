@@ -21,7 +21,7 @@
       ((eq? '/ (operator expression)) (quotient (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '% (operator expression)) (remainder (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? 'funcall (operator expression)) (functionCall expression state))
-      (else (error 'mValue "illegal operator"))))) 
+      (else (mBool expression state)))))
 (define operator car)
 (define leftOperand cadr)
 (define rightOperand caddr)
@@ -45,8 +45,8 @@
       ((eq? 'true expression) #t)
       ((eq? 'false expression) #f)
       ((not (pair? expression)) (findValue expression state));means that the expression is a variable
-      ((eq? '== (operator expression)) (mBool== expression state))
-      ((eq? '!= (operator expression)) (mBool!= expression state))
+      ((eq? '== (operator expression)) (eq? (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
+      ((eq? '!= (operator expression)) (not(eq? (mValue (leftOperand expression) state) (mValue (rightOperand expression) state))))
       ((eq? '< (operator expression)) (< (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '> (operator expression)) (> (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
       ((eq? '<= (operator expression)) (<= (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
@@ -56,29 +56,6 @@
       ((eq? '! (operator expression)) (not (mBool (leftOperand expression) state)))
       ((eq? 'funcall (operator expression)) (functionCall expression state))
       (else (error 'mBool "illegal operator")))))
-
-;helper method of mBool that checks the type of operands to call either mValue or mBool    
-(define mBool==
-  (lambda (expression state)
-    (cond
-      ((and(eq? (typeof (leftOperand expression) state) 'int) (eq? (typeof (rightOperand expression) state) 'int)) (eq? (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
-      ((and(eq? (typeof (leftOperand expression) state) 'boolean) (eq? (typeof (rightOperand expression) state) 'boolean)) (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
-      (else (error 'mBool== comparing int with boolean)))))
-(define mBool!=
-  (lambda (expression state)
-    (not (mBool== expression state))))
-;finds the type of the expression and returns the type as an atom
-(define typeof
-  (lambda (expression state)
-    (cond
-      ((number? expression) 'int) ;numbers
-      ((boolean? expression) 'boolean) ;#t or #f
-      ((eq? 'funcall expression) (typeof (functionCall expression state) state))
-      ((eq? 'true expression) 'boolean)
-      ((eq? 'false expression) 'boolean)
-      ((not (pair? expression)) (typeof (findValue expression state) state)) ;variable
-      ((isIntOperator? (operator expression)) 'int) ;int expresions
-      (else 'boolean)))); 'true 'false and boolean expressions
 
 ;
 ;*mState functions*
@@ -168,10 +145,9 @@
 (define constructParamAsExpression
   (lambda (param value state)
     (cond
-      ((eq? 'int (typeof value state)) (cons 'var (cons param (cons (mValue value state) '()))))
-      ((eq? 'boolean (typeof value state)) (cons 'var (cons param (cons (mBool value state) '()))))
-    )))
-     ;(cons 'var (cons 'a (cons 5 '())))
+      (cons 'var (cons param (cons (mValue value state) '()))))))
+
+;(cons 'var (cons 'a (cons 5 '())))
 ;makes new scope for the new function
 ;adds in the parameters
 (define mStateParam
@@ -197,9 +173,7 @@
 (define mStateAssign
   (lambda (var value state continue break)
     (cond ;using cond in case we add more types in the future
-      ((eq? (typeof value state) 'int) (mStateSetBox var (mValue value state) state))
-      ((eq? (typeof value state) 'boolean) (mStateSetBox var (mBool value state) state))
-      (else (error 'mStateAssign "assigning an invalid type")))))
+      (mStateSetBox var (mValue value state) state))))
 
 (define mStateSetBox-cps
   (lambda (var value state cps)
@@ -248,14 +222,9 @@
 ;or returns the boolean value of the function in form of true/false not #t/#f
 (define mStateReturn
   (lambda (expression state continue break)
-    (cond
-      ((and (pair? expression) (eq? (car expression) 'funcall)) (break (mStateAssign 'return (functionCall expression state) state continue break)))
-      ((eq? (typeof expression state) 'int) (break(mStateAssign 'return (mValue expression state) state continue break)))
-      ((eq? (typeof expression state) 'boolean)
-       (if (mBool expression state)
-           (break (mStateAssign 'return 'true state continue break))
-           (break (mStateAssign 'return 'false state continue break))))
-      (else (error 'mStateReturn "unknown return type")))))
+      (if (and (pair? expression) (eq? (car expression) 'funcall))
+          (break (mStateAssign 'return (functionCall expression state) state continue break))
+          (break(mStateAssign 'return (mValue expression state) state continue break)))))
 
 ;adds a new layer to state
 ;if a continue is seen, end the layer premateurly (uses call/cc to continue)
