@@ -1,3 +1,5 @@
+# eclipse stuff
+.metadata
 *.txt
 test0.txt
 #scheme backup files
