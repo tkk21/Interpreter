@@ -392,7 +392,7 @@
   (lambda (lines state classState)
     (if (null? lines)
         state
-        (mStateGlobal (cdr lines) (mState (car lines) state (lambda (v) v) (lambda (v) v) classState) classState))))
+        (mStateGlobal (cdr lines) (mState (car lines) state classState (emptyLambda) (emptyLambda) (emptyLambda) (emptyLambda)) classState))))
 
 ;even though this seems identical to mState, this function is needed because
 ;mState doesn't evaluate the statements line by line.
