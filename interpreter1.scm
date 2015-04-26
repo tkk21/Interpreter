@@ -155,11 +155,11 @@
 ;the main state method that calls its helper methods
 ;only processes one line and return state
 (define mState
-  (lambda (expression state continue break classState)
+  (lambda (expression state classState return continue break throw)
     (cond
-      ((eq? 'function (operator expression)) (mStateFunctionDeclare expression state continue break))
+      ((eq? 'function (operator expression)) (mStateFunctionDeclare expression state))
       ((eq? 'static-var (operator expression)) (mStateDeclare expression state continue break classState))
-      ((eq? 'static-function (operator expression)) (mStateFunctionDeclare expression state continue break))
+      ((eq? 'static-function (operator expression)) (mStateFunctionDeclare expression state))
       ((eq? 'try (operator expression)) (mStateTry expression state classState))
       ((eq? 'throw (operator expression)) (break (leftOperand expression)))
       ((eq? 'var (operator expression)) (mStateDeclare expression state continue break classState))
@@ -197,7 +197,7 @@
                                                       (eval (cdr body) (mState (car body) state (lambda(v) v) e classState) classState)))))
                                    (eval (cadr expression) state classState))))))
 (define mStateFunctionDeclare
-  (lambda (expression state continue break)
+  (lambda (expression state)
     (consPairToState (name expression) (box (cddr expression)) state)))
 
 
@@ -236,7 +236,7 @@
     (letrec ((eval (lambda (body state classState)
                      (if (null? body)
                          state
-                         (eval (cdr body) (mState (car body) state (lambda(v) v) return classState) classState)))))
+                         (eval (cdr body) (mState (car body) state classState return (emptyLambda) (emptyLambda) (emptyState)) classState)))))
                  (eval body state classState))))
     
 ;adds the param of the function into the body
@@ -418,11 +418,13 @@
     (if (null? lines)
         state
         (mStateEvaluate (cdr lines) (mState (car lines) state  continue break) continue break))))
+;can main call use call/cc or do we have to find it from state
 (define mainCall
   (lambda (expression state classState)
     (call/cc (lambda (return)
-               
-               (evaluateBody (findDotValue (name expression) state classState) (cons (pairToState '(return) (cons(box 'void)'())) state) classState) classState)))
+               (evaluateBody (findDotValue (name expression) state classState);body
+                             (cons (emptyBlock) state) classState return)
+               ))))
 
 (define interpret-func
   (lambda (filename)
