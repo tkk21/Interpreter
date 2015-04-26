@@ -5,7 +5,58 @@
 ;empty state is going to be '( () ())
 
 (load "classParser.scm")
-      
+
+;**************************************************************************************************************************************************************************
+;*****abstractions
+;**************************************************************************************************************************************************************************
+
+;abstractions for mValue/mBool
+(define operator car)
+(define leftOperand cadr)
+(define rightOperand caddr)
+
+;abstractions to make mState helper calling eaasier
+(define variable cadr)
+(define assignedVal caddr)
+(define condition cadr)
+(define then caddr)
+(define else cadddr)
+(define body caddr)
+
+(define name cadr)
+
+(define tryblock cadr)
+(define catchblock caddr)
+(define finallyblock cadddr)
+
+;abstractions for findValue
+
+(define type car)
+(define value cadr)
+
+;abstractions for function
+(define paramList car)
+(define fxnbody cadr)
+(define valueList cddr)
+
+;abstractions for class
+(define parseExtends caddr)
+(define parseClassBody cadddr)
+
+
+(define classBody caddr)
+
+;abstractions for scope
+(define scope car)
+(define nextScope cdr)
+
+;abstractions for dot
+(define dot caddr)
+
+
+(define vars car)
+(define vals cadr)
+
 ;*mValue function*
 ;code outline
 ;mValue is going to need +,-,*,/,%, and negative sign
@@ -23,9 +74,6 @@
       ((eq? '% (operator expression)) (remainder (mValue (leftOperand expression) state classState) (mValue (rightOperand expression) state classState)))
       ((eq? 'funcall (operator expression)) (functionCall expression state classState))
       (else (error 'mValue "illegal operator"))))) 
-(define operator car)
-(define leftOperand cadr)
-(define rightOperand caddr)
 
 ;refactored out the subtraction function so that you don't have if inside cond
 (define mValueSubtraction
@@ -69,6 +117,7 @@
 (define mBool!=
   (lambda (expression state)
     (not (mBool== expression state))))
+
 ;finds the type of the expression and returns the type as an atom
 (define typeof
   (lambda (expression state classState)
@@ -77,11 +126,25 @@
       ((boolean? expression) 'boolean) ;#t or #f
       ((eq? 'true expression) 'boolean)
       ((eq? 'false expression) 'boolean)
-      ((not (pair? expression)) (typeof (findValue expression state) state classState)) ;variable
+      ((not (pair? expression)) (type (findValue expression state))) ;variable
       ((eq? 'funcall (operator expression)) (typeof (functionCall expression state classState) state classState))
       ((eq? 'dot (operator expression)) (typeof (findDotValue expression state classState) state classState))
       ((isIntOperator? (operator expression)) 'int) ;int expresions
-      (else 'boolean)))); 'true 'false and boolean expressions
+      ((isBooleanOperator? (operator expression)) 'boolean) ;boolean expression
+      (else (error 'typeof "unknown type"))))); 'true 'false and boolean expressions
+
+;needed so that we know the only thing that goes inside (if) is a boolean and not an int
+(define isIntOperator?
+  (lambda (op)
+    (member? op '(+ - * / %))))
+(define isBooleanOperator?
+  (lambda (op)
+    (member? op '(== != < > <= >= && || !))))
+(define member?
+  (lambda (a list)
+    (if (empty? list)
+        #f
+        (or (eq? a (car list)) (member? a (cdr list))))))
 
 ;
 ;*mState functions*
@@ -110,19 +173,6 @@
       ((eq? 'funcall (operator expression)) (begin (functionCall expression state classState)state))
       (else (error 'mState "illegal operator")))))
 
-;abstractions to make mState helper calling eaasier
-(define variable cadr)
-(define assignedVal caddr)
-(define condition cadr)
-(define then caddr)
-(define else cadddr)
-(define body caddr)
-
-(define name cadr)
-
-(define tryblock cadr)
-(define catchblock caddr)
-(define finallyblock cadddr)
 
 (define mStateTry
   (lambda (expression state classState)
@@ -150,8 +200,6 @@
   (lambda (expression state continue break)
     (consPairToState (name expression) (box (cddr expression)) state)))
 
-(define parseExtends caddr)
-(define parseClassBody cadddr)
 
 (define classDeclare
   (lambda (expression classState)
@@ -160,9 +208,6 @@
         (cons (list (name expression) 'Object (mStateGlobal (parseClassBody expression) (emptyState) classState)) classState)
         )))
      
-(define paramList car)
-(define fxnbody cadr)
-(define valueList cddr)
 
 ;calls the function and returns the value related to return.
 ;if the function does not return something, then void is returned
@@ -228,8 +273,8 @@
 (define mStateAssign
   (lambda (var value state continue break classState)
     (cond ;using cond in case we add more types in the future
-      ((eq? (typeof value state classState) 'int) (mStateSetBox var (mValue value state classState) state))
-      ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (mBool value state classState) state))
+      ((eq? (typeof value state classState) 'int) (mStateSetBox var (list 'int (mValue value state classState)) state))
+      ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list 'boolean (mBool value state classState)) state))
       (else (error 'mStateAssign "assigning an invalid type")))))
 
 (define mStateSetBox-cps
@@ -255,9 +300,6 @@
 (define mStateStoreValue
   (lambda (var value state)
     (mStateStoreValue-cps var value state (lambda (v) v))))
-;abstractions for scope
-(define scope car)
-(define nextScope cdr)
 
 ;mState's helper methods to do if statements
 (define mStateIf
@@ -324,18 +366,7 @@
   (lambda (state break)
     (break (mStateEndBlock state)) ))
 
-;needed so that we know the only thing that goes inside (if) is a boolean and not an int
-(define isIntOperator?
-  (lambda (op)
-    (member? op '(+ - * / %))))
 
-(define member?
-  (lambda (a list)
-    (if (empty? list)
-        #f
-        (or (eq? a (car list)) (member? a (cdr list))))))
-  
-(define dot caddr)
 (define findDotValue
   (lambda (expression state classState)
     (cond
@@ -343,7 +374,7 @@
       ((eq? 'super (name expression)) (findValue (dot expression) (cddr state)))
       (else (findValue (dot expression) (lookupClassBody (name expression) classState)))
         )))
-    
+
 ;finds a value inside the state by using the var to look it up
 (define findValue
   (lambda (var state)
@@ -369,9 +400,6 @@
   (lambda (state)
     (cons(pairToState (cdr (vars (scope state))) (cdr (vals (scope state)))) (nextScope state) )))
 
-(define vars car)
-(define vals cadr)
-
 ;an outer evaluater 
 (define mStateGlobal
   (lambda (lines state classState)
@@ -379,7 +407,6 @@
         state
         (mStateGlobal (cdr lines) (mState (car lines) state (lambda (v) v) (lambda (v) v) classState) classState))))
 
-(define type car)
 ;even though this seems identical to mState, this function is needed because
 ;mState doesn't evaluate the statements line by line.
 ;eg. ((var z) (= z 10) (return z))
@@ -410,7 +437,6 @@
         (declareAllClasses (cdr lines) (classDeclare (car lines) classState))
         classState)))
 
-(define classBody caddr)
 ; class is (name parent state)
 (define lookupClassBody
   (lambda (className classState)
