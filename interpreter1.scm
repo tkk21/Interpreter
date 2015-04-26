@@ -420,7 +420,8 @@
         (mStateEvaluate (cdr lines) (mState (car lines) state  continue break) continue break))))
 (define mainCall
   (lambda (expression state classState)
-    (findDotValue 'return
+    (call/cc (lambda (return)
+               
                (evaluateBody (findDotValue (name expression) state classState) (cons (pairToState '(return) (cons(box 'void)'())) state) classState) classState)))
 
 (define interpret-func
@@ -448,6 +449,12 @@
       ((eq? className (car (car classState))) (car classState))
       (else (lookupClass className (cdr classState))))))
 
+  
+(define interpret
+  (lambda (filename className)
+    (fixBoolean (mainCall '(funcall main ()) (lookupClassBody className (declareAllClasses (parser filename) '())) (declareAllClasses (parser filename) '())))
+    ))
+  
 (define fixBoolean
   (lambda (val)
     (if (boolean? val)
@@ -460,10 +467,6 @@
         'true
         'false)))
 
-(define interpret
-  (lambda (filename className)
-    (fixBoolean (mainCall '(funcall main ()) (lookupClassBody className (declareAllClasses (parser filename) '())) (declareAllClasses (parser filename) '())))
-    ))
 
 (define emptyState
   (lambda()
