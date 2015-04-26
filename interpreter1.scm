@@ -275,6 +275,7 @@
     (cond ;using cond in case we add more types in the future
       ((eq? (typeof value state classState) 'int) (mStateSetBox var (list 'int (mValue value state classState)) state))
       ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list 'boolean (mBool value state classState)) state))
+      ((not (pair? value)) (mStateSetBox var (list (type (findValue value state)) value)))
       (else (error 'mStateAssign "assigning an invalid type")))))
 
 (define mStateSetBox-cps
