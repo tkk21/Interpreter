@@ -405,7 +405,7 @@
   (lambda (lines state classState return continue break throw)
     (if (null? lines)
         state
-        (mStateEvaluate (cdr lines) (mState (car lines) state  continue break) continue break))))
+        (mStateEvaluate (cdr lines) (mState (car lines) state classState return continue break throw) classState return continue break throw))))
 ;can main call use call/cc or do we have to find it from state
 (define mainCall
   (lambda (expression state classState)
@@ -413,13 +413,6 @@
                (evaluateBody (findDotValue (name expression) state classState);body
                              (cons (emptyBlock) state) classState return)
                ))))
-
-(define interpret-func
-  (lambda (filename)
-    (cond
-      ((eq? (mainCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)) ) #t) 'true)
-      ((eq? (mainCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)) ) #f) 'false)
-      (else (mainCall '(funcall main ()) (mStateGlobal (parser filename) (emptyState)) )))))
 
 (define declareAllClasses
   (lambda (lines classState)
