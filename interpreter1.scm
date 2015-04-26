@@ -256,24 +256,24 @@
 
 ;mState's helper method to do variable declaration
 (define mStateDeclare
-  (lambda (expression state continue break classState)
+  (lambda (expression state classState)
     (cond
       ((eq? (variable expression) 'return) (error 'mStateDeclare "cannot use the token return as variable"))
-      ((pair? (cddr expression)) (mStateAssign (variable expression) (assignedVal expression) (mStateInitialize (variable expression) state continue break) continue break classState));eg. var x = 5
-      (else (mStateInitialize (variable expression) state continue break))))) ; eg. var x
+      ((pair? (cddr expression)) (mStateAssign (variable expression) (assignedVal expression) (mStateInitialize (variable expression) state ) classState));eg. var x = 5
+      (else (mStateInitialize (variable expression) state))))) ; eg. var x
 
 ;don't need cps, just inserting a new var in front of the state
 (define mStateInitialize
-  (lambda (var state continue break)
+  (lambda (var state)
     (consPairToState var (box 'null) state)))
 
 ;mState's helper method to do variable assignment
 (define mStateAssign
-  (lambda (var value state continue break classState)
+  (lambda (var value state classState)
     (cond ;using cond in case we add more types in the future
       ((eq? (typeof value state classState) 'int) (mStateSetBox var (list 'int (mValue value state classState)) state))
       ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list 'boolean (mBool value state classState)) state))
-      ((not (pair? value)) (mStateSetBox var (list (type (findValue value state)) value)))
+      ((not (pair? value)) (mStateSetBox var (list (type (findValue value state)) value) state))
       (else (error 'mStateAssign "assigning an invalid type")))))
 
 (define mStateSetBox-cps
