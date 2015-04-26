@@ -161,7 +161,7 @@
       ((eq? 'function (operator expression)) (mStateFunctionDeclare expression state))
       ((eq? 'static-var (operator expression)) (mStateDeclare expression state classState))
       ((eq? 'var (operator expression)) (mStateDeclare expression state classState))
-      ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state continue break classState)) ;eg. x = 5
+      ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state classState)) ;eg. x = 5
       
       ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state classState return))
       ((eq? 'continue (operator expression)) (continue state))
@@ -169,9 +169,9 @@
       ((eq? 'throw (operator expression)) (throw (cadr expression)))
       
       ((eq? 'try (operator expression)) (mStateTry expression state classState))
-      ((eq? 'if (operator expression)) (mStateIf expression state continue break))
-      ((eq? 'begin (operator expression)) (mStateBeginBlock (cdr expression) state continue break))
-      ((eq? 'while (operator expression)) (mStateWhile (condition expression) (body expression) state))
+      ((eq? 'if (operator expression)) (mStateIf expression state classState return continue break throw))
+      ((eq? 'begin (operator expression)) (mStateBeginBlock (cdr expression) state classState return continue break throw))
+      ((eq? 'while (operator expression)) (mStateWhile (condition expression) (body expression) state classState return continue break throw))
       ((eq? 'funcall (operator expression)) (begin (functionCall expression state classState)state)) ;for if a function is just called by itself eg. void method
       (else (error 'mState "illegal operator")))))
 
@@ -304,18 +304,18 @@
 
 ;mState's helper methods to do if statements
 (define mStateIf
-  (lambda (expression state continue break)
+  (lambda (expression state classState return continue break throw)
     (if (pair? (cdddr expression)) ;if expression has an else statement
-        (mStateIfElse (condition expression) (then expression) (else expression) state continue break)
+        (mStateIfElse (condition expression) (then expression) (else expression) state classState return continue break throw)
         (if (mBool (condition expression) state)
-            (mState (then expression) state continue break)
+            (mState (then expression) state classState return continue break throw)
             state))))
 
 (define mStateIfElse
-  (lambda (condition then else state continue break)
+  (lambda (condition then else state classState return continue break throw)
     (if (mBool condition state)
-        (mState then state continue break) ;just change the state here if I want to do the side effect condition
-        (mState else state continue break))))
+        (mState then state classState return continue break throw) ;just change the state here if I want to do the side effect condition
+        (mState else state classState return continue break throw))))
     
 ;returns the result of the function
 ;either returns the int value of the function
@@ -332,9 +332,9 @@
 ;if a continue is seen, end the layer premateurly (uses call/cc to continue)
 ;ends the layer when interpreter is done evaluating lines
 (define mStateBeginBlock
-  (lambda (expression state continue break)
-    (mStateEndBlock (call/cc (lambda (continue)
-                               (mStateEvaluate  expression (cons '(() ()) state) continue break))))
+  (lambda (expression state classState return continue break throw)
+    (mStateEndBlock (call/cc (lambda (cont)
+                               (mStateEvaluate  expression (cons (emptyBlock) state) classState return cont break throw))))
     ))
 ;gets rid of the layer
 (define mStateEndBlock
@@ -344,14 +344,14 @@
 ;while loop
 ;uses call/cc to break
 (define mStateWhile
-  (lambda (condition body state)
-    (call/cc (lambda(break)
-    (letrec ((loop (lambda (condition body state)
+  (lambda (condition body state classState return continue break throw)
+    (call/cc (lambda(Break)
+    (letrec ((loop (lambda (condition body state classState return continue break throw)
                      (if (mBool condition state)
-                         (loop condition body (mState body state (lambda (v) v) break))
+                         (loop condition body (mState body state classState return continue Break throw) classState return continue Break throw)
                          state))
                    ))
-      (loop condition body state)
+      (loop condition body state classState return continue break throw)
       )))))
 
 (define findDotValue
@@ -402,7 +402,7 @@
 
 ;evaluates all the lines, updating state per line
 (define mStateEvaluate
-  (lambda (lines state continue break)
+  (lambda (lines state classState return continue break throw)
     (if (null? lines)
         state
         (mStateEvaluate (cdr lines) (mState (car lines) state  continue break) continue break))))
