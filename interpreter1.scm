@@ -157,20 +157,22 @@
 (define mState
   (lambda (expression state classState return continue break throw)
     (cond
-      ((eq? 'function (operator expression)) (mStateFunctionDeclare expression state))
-      ((eq? 'static-var (operator expression)) (mStateDeclare expression state continue break classState))
       ((eq? 'static-function (operator expression)) (mStateFunctionDeclare expression state))
-      ((eq? 'try (operator expression)) (mStateTry expression state classState))
-      ((eq? 'throw (operator expression)) (break (leftOperand expression)))
-      ((eq? 'var (operator expression)) (mStateDeclare expression state continue break classState))
+      ((eq? 'function (operator expression)) (mStateFunctionDeclare expression state))
+      ((eq? 'static-var (operator expression)) (mStateDeclare expression state classState))
+      ((eq? 'var (operator expression)) (mStateDeclare expression state classState))
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state continue break classState)) ;eg. x = 5
-      ((eq? 'if (operator expression)) (mStateIf expression state continue break))
+      
       ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state continue break classState))
+      ((eq? 'continue (operator expression)) (continue state))
+      ((eq? 'break (operator expression)) (break (mStateEndBlock state)))
+      ((eq? 'throw (operator expression)) (throw (leftOperand expression)))
+      
+      ((eq? 'try (operator expression)) (mStateTry expression state classState))
+      ((eq? 'if (operator expression)) (mStateIf expression state continue break))
       ((eq? 'begin (operator expression)) (mStateBeginBlock (cdr expression) state continue break))
       ((eq? 'while (operator expression)) (mStateWhile (condition expression) (body expression) state))
-      ((eq? 'continue (operator expression)) (mStateContinue state continue))
-      ((eq? 'break (operator expression)) (mStateBreak state break))
-      ((eq? 'funcall (operator expression)) (begin (functionCall expression state classState)state))
+      ((eq? 'funcall (operator expression)) (begin (functionCall expression state classState)state)) ;for if a function is just called by itself eg. void method
       (else (error 'mState "illegal operator")))))
 
 
@@ -354,17 +356,6 @@
                    ))
       (loop condition body state)
       )))))
-
-;stop and go back to beginning of the loop
-(define mStateContinue
-  (lambda (state continue)
-    (continue state)))
-
-;stop and exit the loop
-(define mStateBreak
-  (lambda (state break)
-    (break (mStateEndBlock state)) ))
-
 
 (define findDotValue
   (lambda (expression state classState)
