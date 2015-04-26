@@ -65,7 +65,7 @@
   (lambda (expression state classState)
     (cond
       ((number? expression) expression)
-      ((not (pair? expression)) (findValue expression state));this expression is a variable
+      ((not (pair? expression)) (value(findValue expression state)));this expression is a variable
       ((eq? 'dot (operator expression)) (findDotValue expression state classState))
       ((eq? '+ (operator expression)) (+ (mValue (leftOperand expression) state classState) (mValue (rightOperand expression) state classState)))
       ((eq? '- (operator expression)) (mValueSubtraction expression state))
@@ -93,7 +93,7 @@
       ((boolean? expression) expression)
       ((eq? 'true expression) #t)
       ((eq? 'false expression) #f)
-      ((not (pair? expression)) (findValue expression state));means that the expression is a variable
+      ((not (pair? expression)) (value(findValue expression state)));means that the expression is a variable
       ((eq? 'dot (operator expression)) (findDotValue expression state classState))
       ((eq? '== (operator expression)) (mBool== expression state))
       ((eq? '!= (operator expression)) (mBool!= expression state))
@@ -371,9 +371,9 @@
 (define findDotValue
   (lambda (expression state classState)
     (cond
-      ((not(pair? expression)) (findValue expression state))
-      ((eq? 'super (name expression)) (findValue (dot expression) (cddr state)))
-      (else (findValue (dot expression) (lookupClassBody (name expression) classState)))
+      ((not(pair? expression)) (value(findValue expression state)))
+      ((eq? 'super (name expression)) (value(findValue (dot expression) (cddr state)))) ;go to next state to find parent
+      (else (findDotValue (dot expression) (lookupClassBody (name expression) classState) classState)) ;no need to (value the result) because that is already done
         )))
 
 ;finds a value inside the state by using the var to look it up
@@ -383,7 +383,7 @@
       ((null? state) (error 'findValue "calling an undeclared variable"))
       ((not(pair? (vars (scope state)))) (findValue var (nextScope state))) ;var not in current scope
       ((and (eq? (car (vars (scope state))) var) (eq? 'null (car (vals (scope state))))) (error 'findValue "using a variable before assigning a value"))
-      ((eq? (car (vars (scope state))) var) (unbox(car (vals (scope state)))))
+      ((eq? (car (vars (scope state))) var) (unbox(car (vals (scope state))))) ; found value
       (else (findValue var (nextPair state))))))
 
 
@@ -423,7 +423,7 @@
 (define mainCall
   (lambda (expression state classState)
     (findDotValue 'return
-               (evaluateBody (fxnbody (findDotValue (name expression) state classState)) (cons (pairToState '(return) (cons(box 'void)'())) state) classState) classState)))
+               (evaluateBody (findDotValue (name expression) state classState) (cons (pairToState '(return) (cons(box 'void)'())) state) classState) classState)))
 
 (define interpret-func
   (lambda (filename)
