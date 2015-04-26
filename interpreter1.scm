@@ -213,24 +213,31 @@
 ;if the function does not return something, then void is returned
 (define functionCall
   (lambda (expression state classState)
-    (findDotValue 'return
-               (evaluateBody (addParamToBody (paramList (findDotValue (name expression) state classState)) (valueList expression) (fxnbody (findDotValue (name expression) state classState)) state classState)
-                             (functionScope state) classState) classState)))
-(define functionScope
-  (lambda (state)
-    (cons (pairToState '(return) (cons (box 'void) '())) (cdr state))))
-    
-;since global variables are in a box, no need to return a state
-;just return the value
-;if no return value, return "void"
-(define evaluateBody
-  (lambda (body state classState)
     (call/cc (lambda (return)
-               (letrec ((eval (lambda (body state classState)
-                                     (if (null? body)
-                                         state
-                                         (eval (cdr body) (mState (car body) state (lambda(v) v) return classState) classState)))))
-                 (eval body state classState))))))
+               (evaluateBody (addParamToBody (paramList (findDotValue (name expression) state classState)) ;paramList
+                                             (valueList expression) ;valueList
+                                             (fxnbody (findDotValue (name expression) state classState)) ;body
+                                             state classState) ;states for addParamsToBody
+                             (functionScope state) classState return))))) ;states for evaluateBody
+;function scope is needed so that the variables declared from the state that calls the function does not affect the function's state
+;eg. {a = 5; Math.add(1, 4);} where Math.add has the param (a, b).
+(define functionScope 
+  (lambda (state)
+    (cons (newBlock) (cdr state))))
+(define newBlock
+  (lambda ()
+    '(()())
+     ))
+
+;evaluates the body
+;after it's done, return the body
+(define evaluateBody
+  (lambda (body state classState return)
+    (letrec ((eval (lambda (body state classState)
+                     (if (null? body)
+                         state
+                         (eval (cdr body) (mState (car body) state (lambda(v) v) return classState) classState)))))
+                 (eval body state classState))))
     
 ;adds the param of the function into the body
 ;for easier block evaluation
@@ -238,8 +245,10 @@
   (lambda (paramList valueList body state classState)
     (cond
       ((and (null? paramList) (pair? valueList)) (error 'functionCall "inputted more values than there are parameters"))
-      ((null? paramList) body)
-      (else(addParamToBody (cdr paramList) (cdr valueList) (cons (constructParamAsExpression (car paramList) (car valueList) state classState) body) state classState)))))
+      ((null? paramList) body) ;done
+      (else(addParamToBody (cdr paramList) (cdr valueList) ;paramList, valueList
+                           (cons (constructParamAsExpression (car paramList) (car valueList) state classState) body);body
+                           state classState)))));states
 ;turns a param name and its value into an expression
 (define constructParamAsExpression
   (lambda (param value state classState)
@@ -247,7 +256,7 @@
       ((eq? 'int (typeof value state classState)) (cons 'var (cons param (cons (mValue value state classState) '()))))
       ((eq? 'boolean (typeof value state classState)) (cons 'var (cons param (cons (mBool value state classState) '()))))
     )))
-     ;(cons 'var (cons 'a (cons 5 '())))
+
 ;makes new scope for the new function
 ;adds in the parameters
 (define mStateParam
@@ -472,6 +481,10 @@
     (cons (pairToState '(return) (cons(box 'void)'())) '())
     ;'(((return)(null)))
     ))
+
+(define emptyLambda
+  (lambda ()
+    (lambda (v) v)))
 (define test
   (lambda (filename num)
     (eq? (interpret (dotTxt (string-append filename (number->string num)))) (interpret (dotTxt(string-append filename (string-append "_answer" (number->string num))))))))
