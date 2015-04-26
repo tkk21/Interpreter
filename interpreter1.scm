@@ -247,15 +247,12 @@
       ((and (null? paramList) (pair? valueList)) (error 'functionCall "inputted more values than there are parameters"))
       ((null? paramList) body) ;done
       (else(addParamToBody (cdr paramList) (cdr valueList) ;paramList, valueList
-                           (cons (constructParamAsExpression (car paramList) (car valueList) state classState) body);body
+                           (cons (constructParamAsExpression (car paramList) (car valueList)) body);body
                            state classState)))));states
 ;turns a param name and its value into an expression
 (define constructParamAsExpression
-  (lambda (param value state classState)
-    (cond
-      ((eq? 'int (typeof value state classState)) (cons 'var (cons param (cons (mValue value state classState) '()))))
-      ((eq? 'boolean (typeof value state classState)) (cons 'var (cons param (cons (mBool value state classState) '()))))
-    )))
+  (lambda (param value)
+    (cons 'var (cons param (cons value '() )))))
 
 ;makes new scope for the new function
 ;adds in the parameters
