@@ -36,7 +36,6 @@
 
 ;abstractions for function
 (define paramList car)
-(define fxnbody cadr)
 (define valueList cddr)
 
 ;abstractions for class
@@ -218,7 +217,7 @@
     (call/cc (lambda (return)
                (evaluateBody (addParamToBody (paramList (findDotValue (name expression) state classState)) ;paramList
                                              (valueList expression) ;valueList
-                                             (fxnbody (findDotValue (name expression) state classState)) ;body
+                                             (findDotValue (name expression) state classState) ;body
                                              state classState) ;states for addParamsToBody
                              (functionScope state) classState return))))) ;states for evaluateBody
 ;function scope is needed so that the variables declared from the state that calls the function does not affect the function's state
