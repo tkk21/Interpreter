@@ -254,14 +254,6 @@
   (lambda (param value)
     (cons 'var (cons param (cons value '() )))))
 
-;makes new scope for the new function
-;adds in the parameters
-(define mStateParam
-  (lambda (paramList valueList state continue break)
-    (if (null? paramList)
-        state
-        (mStateParam (cdr paramList) (cdr valueList) (mStateAssign (car paramList) (car valueList) (mStateDeclare (car paramList) state continue break) continue break) continue break))))
-
 ;mState's helper method to do variable declaration
 (define mStateDeclare
   (lambda (expression state continue break classState)
