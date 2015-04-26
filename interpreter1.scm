@@ -223,8 +223,8 @@
 ;eg. {a = 5; Math.add(1, 4);} where Math.add has the param (a, b).
 (define functionScope 
   (lambda (state)
-    (cons (newBlock) (cdr state))))
-(define newBlock
+    (cons (emptyBlock) (cdr state))))
+(define emptyBlock
   (lambda ()
     '(()())
      ))
