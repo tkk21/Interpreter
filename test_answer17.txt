@@ -1,1 +1,1 @@
-return an;
+return 123456;

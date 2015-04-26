@@ -1,28 +1,25 @@
 
-function main() {
-  var result;
-  var base;
+class Box {
+  static var countAccesses = 0;
+  var size = 1;
 
-  function getpow(a) {
-     var x;
-
-     function setanswer(n) {
-        result = n;
-     }
-
-     function recurse(m) {
-       if (m > 0) {
-         x = x * base;
-         recurse(m-1);
-       }
-       else
-         setanswer(x);
-     }
-
-     x = 1;
-     recurse(a);
+  function setSize(s) {
+    this.size = s;
+    countAccesses = countAccesses + 1;
   }
-  base = 2;
-  getpow(6);
-  return result;
+
+  static function main() {
+    var x = 0;
+    var c;
+
+    while (x < 10) {
+      var a = new Box();
+      a.setSize(x + countAccesses);
+      if (a.size % 4 == 0)
+        c = a;
+      x = x + 1;
+    }
+
+    return c.size;
+  }
 }
