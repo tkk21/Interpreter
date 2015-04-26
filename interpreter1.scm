@@ -163,10 +163,10 @@
       ((eq? 'var (operator expression)) (mStateDeclare expression state classState))
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state continue break classState)) ;eg. x = 5
       
-      ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state continue break classState))
+      ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state classState return))
       ((eq? 'continue (operator expression)) (continue state))
       ((eq? 'break (operator expression)) (break (mStateEndBlock state)))
-      ((eq? 'throw (operator expression)) (throw (leftOperand expression)))
+      ((eq? 'throw (operator expression)) (throw (cadr expression)))
       
       ((eq? 'try (operator expression)) (mStateTry expression state classState))
       ((eq? 'if (operator expression)) (mStateIf expression state continue break))
@@ -321,14 +321,11 @@
 ;either returns the int value of the function
 ;or returns the boolean value of the function in form of true/false not #t/#f
 (define mStateReturn
-  (lambda (expression state continue break classState)
+  (lambda (expression state classState return)
     (cond
-      ((and (pair? expression) (eq? (car expression) 'funcall)) (break (mStateAssign 'return (functionCall expression state classState) state continue break classState)))
-      ((eq? (typeof expression state classState) 'int) (break(mStateAssign 'return (mValue expression state classState)  state continue break classState)))
-      ((eq? (typeof expression state classState) 'boolean)
-       (if (mBool expression state classState)
-           (break (mStateAssign 'return 'true state continue break classState))
-           (break (mStateAssign 'return 'false state continue break classState))))
+      ((eq? 'int (typeof expression state classState)) (return (mValue expression state classState)));expression is integer expression
+      ((eq? 'boolean (typeof expression state classState)) (return (mBool expression state classState)));expression is boolean expression
+      ((and (pair? expression) (eq? (car expression) 'funcall)) (return (functionCall expression state classState)));expression is a function call
       (else (error 'mStateReturn "unknown return type")))))
 
 ;adds a new layer to state
