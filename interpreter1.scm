@@ -347,9 +347,6 @@
         (mStateNewInstanceCreateState (cdr var) (cdr val) (consPairToState (car var) (car val) state) classState)
         (mStateNewInstanceCreateStata (cdr var) (cdr val) (mStateDeclare (list 'var (car var) (car val)) state classState)))
     ))
-    
-    
-    
 
 (define mStateSetBox-cps
   (lambda (var value state cps)
@@ -360,9 +357,7 @@
       (else (mStateSetBox-cps var value (nextPair state) (lambda (v) (cps (consPairToState (car(vars(scope state))) (car(vals(scope state))) v)))))))) ;not this one
 (define mStateSetBox
   (lambda (var value state)
-    (call/cc
-     (lambda (break)
-       (mStateSetBox-cps var value state break)))))
+    (mStateSetBox-cps var value state (lambda (v) v))))
 
 ;mState's helper methods to do if statements
 (define mStateIf
