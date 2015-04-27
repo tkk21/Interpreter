@@ -37,6 +37,7 @@
 
 ;abstractions for function
 (define paramList car)
+(define fxnBody cadr)
 (define valueList cddr)
 
 ;abstractions for class
@@ -220,12 +221,12 @@
   (lambda (expression state classState)
     (call/cc (lambda (return)
                (if (not(pair? (valueList expression)))
-                   (evaluateBody (findDotValue expression state classState) (functionScope state) classState return)
-                   (evaluateBody (addParamToBody (paramList (findDotValue expression state classState)) ;paramList
+                   (mStateEvaluate (fxnBody (findFunction (name expression) state classState)) (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda))
+                   (mStateEvaluate (addParamToBody (paramList(findFunction (name expression) state classState)) ;paramList
                                              (valueList expression) ;valueList
-                                             (findDotValue expression state classState) ;body
+                                             (fxnBody (findFunction (name expression) state classState)) ;body
                                              state classState) ;states for addParamsToBody
-                             (functionScope state) classState return)))))) ;states for evaluateBody
+                             (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda))))))) ;states for evaluateBody
 ;function scope is needed so that the variables declared from the state that calls the function does not affect the function's state
 ;eg. {a = 5; Math.add(1, 4);} where Math.add has the param (a, b).
 (define functionScope 
@@ -401,13 +402,24 @@
 
 (define findDotValue
   (lambda (expression state classState)
+    (value(lookup expression state classState))))
+
+(define lookup
+  (lambda (expression state classState)
     (cond
-      ((not (eq? 'dot (operator expression))) (value (findValue (cadr expression) state)))
-      ((eq? 'super (name expression)) (value(findValue (dot expression) (cddr state)))) ;go to next state to find parent
-      ((eq? 'this (name expression)) (value (findValue (dot expression) state))) ;is this the right state?
-      ((not(pair? (name expression))) (value (findValue (dot expression) state))) ;object case
+      ((not (eq? 'dot (operator expression))) (findValue expression state))
+      ((eq? 'super (name expression)) (findValue (dot expression) (cddr state))) ;go to next state to find parent
+      ((eq? 'this (name expression)) (findValue (dot expression) state)) ;is this the right state?
+      ((not(pair? (name expression))) (findValue (dot expression) state)) ;object case
       (else (findDotValue (dot expression) (lookupClassBody (name expression) classState) classState)) ;no need to (value the result) because that is already done
         )))
+
+(define findFunction
+  (lambda (fxn state classState)
+    (cond
+      ((not (pair? fxn)) (findValue fxn state))
+      ((eq? 'dot (operator fxn)) (findValue (caddr fxn) (lookupClassBody (cadr fxn) classState)))
+      )))
 
 ;finds a value inside the state by using the var to look it up
 (define findValue
