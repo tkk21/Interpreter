@@ -58,6 +58,16 @@
 (define vars car)
 (define vals cadr)
 
+(define valueof
+  (lambda (expression state classState)
+    (cond
+      ((eq? 'int (typeof expression state classState)) (mValue expression state classState))
+      ((eq? 'boolean (typeof expression state classState)) (mBool expression state classState))
+      ((not (pair? expression)) (first (value (findValue expression state)))) ;variable
+      ((eq? 'funcall (operator expression)) (functionCall expression state classState))
+      ((eq? 'dot (operator expression)) (findDotValue expression state classState))
+      (else (error 'valueof "unknown type")))))
+      
 ;*mValue function*
 ;code outline
 ;mValue is going to need +,-,*,/,%, and negative sign
@@ -94,7 +104,7 @@
       ((boolean? expression) expression)
       ((eq? 'true expression) #t)
       ((eq? 'false expression) #f)
-      ((not (pair? expression)) (findValue expression state));means that the expression is a variable
+      ((not (pair? expression)) (value(findValue expression state)));means that the expression is a variable
       ((eq? 'dot (operator expression)) (value (findDotValue expression state classState)))
       ((eq? '== (operator expression)) (mBool== expression state))
       ((eq? '!= (operator expression)) (mBool!= expression state))
@@ -255,7 +265,7 @@
       ((and (null? paramList) (pair? valueList)) (error 'functionCall "inputted more values than there are parameters"))
       ((null? paramList) body) ;done
       (else(addParamToBody (cdr paramList) (cdr valueList) ;paramList, valueList
-                           (cons (constructParamAsExpression (car paramList) (car valueList)) body);body
+                           (cons (constructParamAsExpression (car paramList) (valueof (car valueList) state classState)) body);body
                            state classState)))));states
 ;turns a param name and its value into an expression
 (define constructParamAsExpression
