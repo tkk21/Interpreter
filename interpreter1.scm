@@ -201,7 +201,10 @@
   (lambda (expression state)
     (consPairToState (name expression) (box (cddr expression)) state)))
 
-
+;class is made of
+;1. its name
+;2. what it extends
+;3. its body
 (define classDeclare
   (lambda (expression classState)
     (if (pair? (parseExtends expression)) ;this class extends something
@@ -448,7 +451,6 @@
     (if bool
         'true
         'false)))
-
 
 (define emptyState
   (lambda()
