@@ -337,20 +337,9 @@
       (else (mStateSetBox-cps var value (nextPair state) (lambda (v) (cps (consPairToState (car(vars(scope state))) (car(vals(scope state))) v)))))))) ;not this one
 (define mStateSetBox
   (lambda (var value state)
-    (mStateSetBox-cps var value state (lambda (v) v))))
-
-;goes through all the scopes to find the value to store in
-(define mStateStoreValue-cps
-  (lambda (var value state return)
-    (cond
-      ((null? state) (error 'mState "assigning a value to an undeclared variable"))
-      ((not (pair? (vars(scope state)))) (return (mStateStoreValue-cps var value (nextScope state) (lambda (v) (cons (scope state) v)))))
-      ((eq? (car (vars (scope state))) var) (return (consPairToState var value (nextPair state))))
-      (else (mStateStoreValue-cps var value (nextPair state) (lambda (v) (return (consPairToState (car(vars(scope state))) (car(vals(scope state))) v))))))))
-;version of mStateStoreValue that has lambda (v) v in it already
-(define mStateStoreValue
-  (lambda (var value state)
-    (mStateStoreValue-cps var value state (lambda (v) v))))
+    (call/cc
+     (lambda (break)
+       (mStateSetBox-cps var value state break)))))
 
 ;mState's helper methods to do if statements
 (define mStateIf
