@@ -93,8 +93,8 @@
       ((boolean? expression) expression)
       ((eq? 'true expression) #t)
       ((eq? 'false expression) #f)
-      ((not (pair? expression)) (value(findValue expression state)));means that the expression is a variable
-      ((eq? 'dot (operator expression)) (findDotValue expression state classState))
+      ((not (pair? expression)) (findValue expression state));means that the expression is a variable
+      ((eq? 'dot (operator expression)) (value (findDotValue expression state classState)))
       ((eq? '== (operator expression)) (mBool== expression state))
       ((eq? '!= (operator expression)) (mBool!= expression state))
       ((eq? '< (operator expression)) (< (mValue (leftOperand expression) state classState) (mValue (rightOperand expression) state classState)))
@@ -479,7 +479,7 @@
   
 (define interpret
   (lambda (filename className)
-    (fixBoolean (mainCall '(funcall main ()) (lookupClassBody className (declareAllClasses (parser filename) '())) (declareAllClasses (parser filename) '())))
+    (fixBoolean (mainCall '(funcall main) (lookupClassBody className (declareAllClasses (parser filename) '())) (declareAllClasses (parser filename) '())))
     ))
   
 (define fixBoolean
