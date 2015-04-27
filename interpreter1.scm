@@ -453,10 +453,10 @@
 ;can main call use call/cc or do we have to find it from state
 (define mainCall
   (lambda (expression state classState)
-    (call/cc (lambda (return)
-               (evaluateBody (findDotValue expression state classState);body
-                             (cons (emptyBlock) state) classState return)
-               ))))
+    (functionCall expression (cons (emptyBlock) state) classState)
+               ;(evaluateBody expression;body
+                ;             (cons (emptyBlock) state) classState return)
+               ))
 
 (define declareAllClasses
   (lambda (lines classState)
