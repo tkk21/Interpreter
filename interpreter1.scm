@@ -219,11 +219,13 @@
 (define functionCall
   (lambda (expression state classState)
     (call/cc (lambda (return)
-               (evaluateBody (addParamToBody (paramList (findDotValue expression state classState)) ;paramList
+               (if (not(pair? (valueList expression)))
+                   (evaluateBody (findDotValue expression state classState) (functionScope state) classState return)
+                   (evaluateBody (addParamToBody (paramList (findDotValue expression state classState)) ;paramList
                                              (valueList expression) ;valueList
                                              (findDotValue expression state classState) ;body
                                              state classState) ;states for addParamsToBody
-                             (functionScope state) classState return))))) ;states for evaluateBody
+                             (functionScope state) classState return)))))) ;states for evaluateBody
 ;function scope is needed so that the variables declared from the state that calls the function does not affect the function's state
 ;eg. {a = 5; Math.add(1, 4);} where Math.add has the param (a, b).
 (define functionScope 
