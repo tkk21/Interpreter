@@ -306,11 +306,34 @@
 (define mStateAssign
   (lambda (var value state classState)
     (cond ;using cond in case we add more types in the future
+      ((pair? var) (mStateDotAssign var value state classState))
+      
       ((eq? (typeof value state classState) 'int) (mStateSetBox var (list '(int nonstatic) (mValue value state classState)) state))
       ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list '(boolean nonstatic) (mBool value state classState)) state))
       ((not (pair? value)) (mStateSetBox var (list (list (type (findValue value state)) 'nonstatic) (findDotValue value state classState)) state));if a variable is assigned
       ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) mStateNewInstance value classState)))
       (else (error 'mStateAssign "assigning an invalid type")))))
+(define mStateDotAssign
+  (lambda (var value state classState)
+    (cond
+      ((eq? 'super (name var)) (mStateSetBox (dot var) (valueWithType value state classState) (cddr state)))
+      ((eq? 'this (name var)) (mStateSetBox (dot var) (valueWithType value state classState) state))
+      ((and (not(pair? (name var))) (stateIncludes? (cadr var) state) (stateIncludes? (dot var) (findValue (cadr var) state)))
+       (mStateSetBox (dot var) (valueWithType value state classState) (findValue (cadr var) state))) ;non-static case or if the static var is within scope
+      ((not(pair? (name var))) (mStateSetBox (dot var) (valueWithType value state classState) (lookupClassBody (cadr var) classState)));non-static case
+      ((and (stateIncludes? (cadr var) state) (stateIncludes? (dot var) (findValue (cadr var) state)))
+       (mStateDotAssign (dot var) (valueWithType value state classState) (findValue (cadr var) state)))
+      (else (mStateDotAssign (dot var) (valueWithType value state classState) (lookupClassBody (name var) classState) classState))) ;no need to (value the result) because that is already done ; this one is for nested dots
+    ))
+
+(define valueWithType
+  (lambda (value state classState)
+    (cond
+      ((eq? (typeof value state classState) 'int) (list '(int nonstatic) (mValue value state classState)))
+      ((eq? (typeof value state classState) 'boolean) (list '(boolean nonstatic) (mBool value state classState)))
+      ((not (pair? value)) (list (list (type (findValue value state)) 'nonstatic) (findDotValue value state classState)));if a variable is assigned
+      ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) mStateNewInstance value classState)))
+      (else (error 'mStateDotAssign "assigning an invalid type")))))
 ;copy down the static fields
 ;copy down the function
 ;declare instance fields
@@ -412,7 +435,9 @@
       ((and (not(pair? (name expression))) (stateIncludes? (cadr expression) state) (stateIncludes? (dot expression) (findValue (cadr expression) state))) 
        (findValue (dot expression) (findValue (cadr expression) state)));non-static case or if the static var is within scope
       ((not(pair? (name expression))) (findValue (dot expression) (lookupClassBody (cadr expression) classState))) ;non-static case
-      (else (findDotValue (dot expression) (lookupClassBody (name expression) classState) classState)) ;no need to (value the result) because that is already done ; this one is for nested dots
+      ((and (stateIncludes? (cadr expression) state) (stateIncludes? (dot expression) (findValue (cadr expression) state)))
+       (lookup (dot expression) (findValue (cadr expression) state) classState))
+      (else (lookup (dot expression) (lookupClassBody (name expression) classState) classState)) ;no need to (value the result) because that is already done ; this one is for nested dots
         )))
 (define stateIncludes?
   (lambda (var state)
