@@ -417,10 +417,10 @@
 (define lookup
   (lambda (expression state classState)
     (cond
-      ((not (eq? 'dot (operator expression))) (findValue expression state))
+      ((not(pair? (name expression))) (findValue (dot expression) state)) ;object case
+      ((not (eq? 'dot (operator expression))) (findValue expression state)) ;idk which case this would be
       ((eq? 'super (name expression)) (findValue (dot expression) (cddr state))) ;go to next state to find parent
       ((eq? 'this (name expression)) (findValue (dot expression) state)) ;is this the right state?
-      ((not(pair? (name expression))) (findValue (dot expression) state)) ;object case
       (else (findDotValue (dot expression) (lookupClassBody (name expression) classState) classState)) ;no need to (value the result) because that is already done
         )))
 
