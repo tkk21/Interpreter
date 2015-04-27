@@ -417,13 +417,24 @@
 (define lookup
   (lambda (expression state classState)
     (cond
-      ((not(pair? (name expression))) (findValue (dot expression) state)) ;object case
-      ((not (eq? 'dot (operator expression))) (findValue expression state)) ;idk which case this would be
+      ((not (eq? 'dot (operator expression))) (findValue expression state)) ;not dot
       ((eq? 'super (name expression)) (findValue (dot expression) (cddr state))) ;go to next state to find parent
       ((eq? 'this (name expression)) (findValue (dot expression) state)) ;is this the right state?
-      (else (findDotValue (dot expression) (lookupClassBody (name expression) classState) classState)) ;no need to (value the result) because that is already done
+      ((and (not(pair? (name expression))) (stateIncludes? (cadr expression) state) (stateIncludes? (dot expression) (findValue (cadr expression) state))) 
+       (findValue (dot expression) (findValue (cadr expression) state)));non-static case or if the static var is within scope
+      ((not(pair? (name expression))) (findValue (dot expression) (lookupClassBody (cadr expression) classState))) ;non-static case
+      (else (findDotValue (dot expression) (lookupClassBody (name expression) classState) classState)) ;no need to (value the result) because that is already done ; this one is for nested dots
         )))
+(define stateIncludes?
+  (lambda (var state)
+    (cond
+      ((null? state) #f)
+      ((not(pair? (vars (scope state)))) (stateIncludes? var (nextScope state))) ;var not in current scope
+      ((eq? (car (vars (scope state))) var) #t) ; found value
+      (else (stateIncludes? var (nextPair state))))))
 
+    
+    
 (define findFunction
   (lambda (fxn state classState)
     (cond
