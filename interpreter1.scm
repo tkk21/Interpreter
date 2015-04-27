@@ -400,6 +400,7 @@
 (define findDotValue
   (lambda (expression state classState)
     (cond
+      ((not (eq? 'dot (operator expression))) (value (findValue (cadr expression) state)))
       ((eq? 'super (name expression)) (value(findValue (dot expression) (cddr state)))) ;go to next state to find parent
       ((eq? 'this (name expression)) (value (findValue (dot expression) state))) ;is this the right state?
       ((not(pair? (name expression))) (value (findValue (dot expression) state))) ;object case
