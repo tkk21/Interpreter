@@ -428,7 +428,12 @@
   (lambda (fxn state classState)
     (cond
       ((not (pair? fxn)) (findValue fxn state))
-      ((eq? 'dot (operator fxn)) (findValue (caddr fxn) (lookupClassBody (cadr fxn) classState)))
+      ((eq? 'super (name fxn)) (findValue (dot fxn) (cddr state))) ;go to next state to find parent
+      ((eq? 'this (name fxn)) (findValue (dot fxn) state)) ;is this the right state?
+      ((not(pair? (name fxn))) (findValue (dot fxn) state)) ;object case
+      (else (findDotValue (dot fxn) (lookupClassBody (name fxn) classState) classState)) ;no need to (value the result) because that is already done
+      ;((eq? 'dot (operator fxn)) (findValue (caddr fxn) (lookupClassBody (cadr fxn) classState)))
+      
       )))
 
 ;finds a value inside the state by using the var to look it up
