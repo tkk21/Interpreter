@@ -12,6 +12,7 @@
 
 ;abstractions for mValue/mBool
 (define operator car)
+(define operand cadr)
 (define leftOperand cadr)
 (define rightOperand caddr)
 
@@ -162,10 +163,10 @@
       ((eq? 'var (operator expression)) (mStateDeclare expression state classState))
       ((eq? '= (operator expression)) (mStateAssign (variable expression) (assignedVal expression) state classState)) ;eg. x = 5
       
-      ((eq? 'return (operator expression)) (mStateReturn (cadr expression) state classState return))
+      ((eq? 'return (operator expression)) (mStateReturn (operand expression) state classState return))
       ((eq? 'continue (operator expression)) (continue state))
       ((eq? 'break (operator expression)) (break (mStateEndBlock state)))
-      ((eq? 'throw (operator expression)) (throw (cadr expression)))
+      ((eq? 'throw (operator expression)) (throw (operand expression)))
       
       ((eq? 'try (operator expression)) (mStateTry expression state classState))
       ((eq? 'if (operator expression)) (mStateIf expression state classState return continue break throw))
