@@ -298,6 +298,22 @@
       ((not (pair? value)) (mStateSetBox var (list (list (type (findValue value state)) 'nonstatic) (findDotValue value state classState)) state));if a variable is assigned
       ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) mStateNewInstance value classState)))
       (else (error 'mStateAssign "assigning an invalid type")))))
+;copy down the static fields
+;copy down the function
+;declare instance fields
+(define mStateNewInstance
+  (lambda (expression classState)
+    (mStateNewInstanceCreateState (vars(caddr (lookupClass (name expression) classState))) (vals(caddr (lookupClass (name expression) classState))) (emptyBlock) classState)
+    ))
+(define mStateNewInstanceCreateState
+  (lambda (var val state classState)
+    (if (eq? 'static (cadr (type val)))
+        (mStateNewInstanceCreateState (cdr var) (cdr val) (consPairToState (car var) (car val) state) classState)
+        (mStateNewInstanceCreateStata (cdr var) (cdr val) (mStateDeclare (list 'var (car var) (car val)) state classState)))
+    ))
+    
+    
+    
 
 (define mStateSetBox-cps
   (lambda (var value state cps)
