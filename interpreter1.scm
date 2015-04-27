@@ -356,11 +356,18 @@
       (loop condition body state classState return continue break throw)
       )))))
 
+;there will be 5 types of dot operations
+;1. this.field/method
+;2. super.field/method
+;3. object.field/method
+;treat field/method as pretty much same because stuff works like (funcall (dot A a))
+
 (define findDotValue
   (lambda (expression state classState)
     (cond
-      ((not(pair? expression)) (value(findValue expression state)))
       ((eq? 'super (name expression)) (value(findValue (dot expression) (cddr state)))) ;go to next state to find parent
+      ((eq? 'this (name expression)) (value (findValue (dot expression) state))) ;is this the right state?
+      ((not(pair? (name expression))) (value (findValue (dot expression) state))) ;object case
       (else (findDotValue (dot expression) (lookupClassBody (name expression) classState) classState)) ;no need to (value the result) because that is already done
         )))
 
@@ -412,7 +419,7 @@
 (define mainCall
   (lambda (expression state classState)
     (call/cc (lambda (return)
-               (evaluateBody (findDotValue (name expression) state classState);body
+               (evaluateBody (findDotValue expression state classState);body
                              (cons (emptyBlock) state) classState return)
                ))))
 
