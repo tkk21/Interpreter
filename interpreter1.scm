@@ -126,7 +126,7 @@
       ((boolean? expression) 'boolean) ;#t or #f
       ((eq? 'true expression) 'boolean)
       ((eq? 'false expression) 'boolean)
-      ((not (pair? expression)) (type (findValue expression state))) ;variable
+      ((not (pair? expression)) (first (type (findValue expression state)))) ;variable
       ((eq? 'funcall (operator expression)) (typeof (functionCall expression state classState) state classState))
       ((eq? 'dot (operator expression)) (typeof (findDotValue expression state classState) state classState))
       ((isIntOperator? (operator expression)) 'int) ;int expresions
@@ -259,6 +259,22 @@
   (lambda (param value)
     (cons 'var (cons param (cons value '() )))))
 
+;static versions of declaring and assigning static variables
+(define mStateStaticDeclare
+  (lambda (expression state classState)
+    (cond
+      ((eq? (variable expression) 'return) (error 'mStateDeclare "cannot use the token return as variable"))
+      ((pair? (cddr expression)) (mStateStaticAssign (variable expression) (assignedVal expression) (mStateInitialize (variable expression) state ) classState));eg. var x = 5
+      (else (mStateInitialize (variable expression) state))))) ; eg. var x
+(define mStateStaticAssign
+  (lambda (var value state classState)
+    (cond ;using cond in case we add more types in the future
+      ((eq? (typeof value state classState) 'int) (mStateSetBox var (list '(int static) (mValue value state classState)) state))
+      ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list '(boolean static) (mBool value state classState)) state))
+      ((not (pair? value)) (mStateSetBox var (list  (list (typeof (value state classState) 'static)) (findDotValue value state classState)) state));if a variable is assigned
+      ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) mStateNewInstance value classState)))
+      (else (error 'mStateAssign "assigning an invalid type")))))
+  
 ;mState's helper method to do variable declaration
 (define mStateDeclare
   (lambda (expression state classState)
@@ -273,12 +289,14 @@
     (consPairToState var (box 'null) state)))
 
 ;mState's helper method to do variable assignment
+;the variable points to a box containing a list that is (type, value)
 (define mStateAssign
   (lambda (var value state classState)
     (cond ;using cond in case we add more types in the future
-      ((eq? (typeof value state classState) 'int) (mStateSetBox var (list 'int (mValue value state classState)) state))
-      ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list 'boolean (mBool value state classState)) state))
-      ((not (pair? value)) (mStateSetBox var (list (type (findValue value state)) value) state))
+      ((eq? (typeof value state classState) 'int) (mStateSetBox var (list '(int nonstatic) (mValue value state classState)) state))
+      ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list '(boolean nonstatic) (mBool value state classState)) state))
+      ((not (pair? value)) (mStateSetBox var (list (list (type (findValue value state)) 'nonstatic) (findDotValue value state classState)) state));if a variable is assigned
+      ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) mStateNewInstance value classState)))
       (else (error 'mStateAssign "assigning an invalid type")))))
 
 (define mStateSetBox-cps
