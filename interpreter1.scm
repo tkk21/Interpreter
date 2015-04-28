@@ -142,7 +142,7 @@
       ((eq? 'dot (operator expression)) (typeof (findDotValue expression state classState) state classState))
       ((isIntOperator? (operator expression)) 'int) ;int expresions
       ((isBooleanOperator? (operator expression)) 'boolean) ;boolean expression
-      (else (error 'typeof "unknown type"))))); 'true 'false and boolean expressions
+      (else 'unknown)))); 'true 'false and boolean expressions
 
 ;needed so that we know the only thing that goes inside (if) is a boolean and not an int
 (define isIntOperator?
@@ -302,7 +302,7 @@
       ((eq? (typeof value state classState) 'int) (mStateSetBox var (list '(int static) (mValue value state classState)) state))
       ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list '(boolean static) (mBool value state classState)) state))
       ((not (pair? value)) (mStateSetBox var (list  (list (typeof (value state classState) 'static)) (findDotValue value state classState)) state));if a variable is assigned
-      ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) (mStateNewInstance value classState))))
+      ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) (mStateNewInstance value classState)) state))
       (else (error 'mStateAssign "assigning an invalid type")))))
   
 ;mState's helper method to do variable declaration
@@ -324,11 +324,11 @@
   (lambda (var value state classState)
     (cond ;using cond in case we add more types in the future
       ((pair? var) (mStateDotAssign var value state classState))
-      
       ((eq? (typeof value state classState) 'int) (mStateSetBox var (list '(int nonstatic) (mValue value state classState)) state))
       ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list '(boolean nonstatic) (mBool value state classState)) state))
       ((not (pair? value)) (mStateSetBox var (list (list (type (findValue value state)) 'nonstatic) (findDotValue value state classState)) state));if a variable is assigned
-      ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) mStateNewInstance value classState)))
+      ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) (mStateNewInstance value classState)) state))
+      
       (else (error 'mStateAssign "assigning an invalid type")))))
 (define mStateDotAssign
   (lambda (var value state classState)
@@ -356,14 +356,20 @@
 ;declare instance fields
 (define mStateNewInstance
   (lambda (expression classState)
-    (mStateNewInstanceCreateState (vars(caddr (lookupClass (name expression) classState))) (vals(caddr (lookupClass (name expression) classState))) (emptyBlock) classState)
+    (mStateNewInstanceCreateState (vars(car(caddr (lookupClass (name expression) classState)))) (vals(car(caddr (lookupClass (name expression) classState)))) (emptyBlock) classState)
     ))
 (define mStateNewInstanceCreateState
   (lambda (var val state classState)
-    (if (eq? 'static (cadr (type val)))
-        (mStateNewInstanceCreateState (cdr var) (cdr val) (consPairToState (car var) (car val) state) classState)
-        (mStateNewInstanceCreateStata (cdr var) (cdr val) (mStateDeclare (list 'var (car var) (car val)) state classState)))
-    ))
+    (cond
+      ((null? var) state)
+      ((isStatic? val state classState) (mStateNewInstanceCreateState (cdr var) (cdr val) (consPairToState (car var) (car val) state) classState))
+      (else (mStateNewInstanceCreateState (cdr var) (cdr val) (mStateDeclare (list 'var (car var) (car val)) state classState) classState))
+    )))
+(define isStatic?
+  (lambda (val state classState)
+    (if (pair? (type(unbox(car val))))
+        (eq? 'static (cadr(type(unbox val))))
+        #t)))
 
 (define mStateSetBox-cps
   (lambda (var value state cps)
