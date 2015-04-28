@@ -450,12 +450,12 @@
 (define findFunction
   (lambda (fxn state classState)
     (cond
-      ((not (pair? fxn)) (findValue fxn state))
+      ((not (pair? (name fxn))) (findValue (name fxn) state))
       ((eq? 'super (name fxn)) (findValue (dot fxn) (cddr state))) ;go to next state to find parent
       ((eq? 'this (name fxn)) (findValue (dot fxn) state)) ;is this the right state?
       ((and (not(pair? (dot (name fxn)))) (stateIncludes? (cadr (name fxn)) state) (stateIncludes? (dot (name fxn)) (findValue (cadr (name expression)) state)))
             (findValue (dot (name fxn)) (findValue (cadr (name fxn)) state))) ;non-static object case
-      ((not(pair? (name fxn))) (findValue (dot expression) (lookupClassBody (cadr expression) classState))) ;static case
+      ((not(pair? (dot (name fxn)))) (findValue (dot (name fxn)) (lookupClassBody (cadr (name fxn)) classState))) ;static case
       ;chained functions, not sure if it works
       ((and (stateIncludes? (cadr (name fxn)) state) (stateIncludes? (cadr(name fxn)) (findValue (cadr (name fxn)) state)))
        (findFunction (dot (name fxn)) (findValue (cadr (name fxn)) state) classState))
