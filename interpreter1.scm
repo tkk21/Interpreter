@@ -179,7 +179,7 @@
       ((eq? 'break (operator expression)) (break (mStateEndBlock state)))
       ((eq? 'throw (operator expression)) (throw (operand expression)))
       
-      ((eq? 'try (operator expression)) (mStateTry expression state classState))
+      ((eq? 'try (operator expression)) (mStateTry expression state classState return continue break throw))
       ((eq? 'if (operator expression)) (mStateIf expression state classState return continue break throw))
       ((eq? 'begin (operator expression)) (mStateBeginBlock (cdr expression) state classState return continue break throw))
       ((eq? 'while (operator expression)) (mStateWhile (condition expression) (body expression) state classState return continue break throw))
@@ -188,27 +188,18 @@
 
 
 (define mStateTry
-  (lambda (expression state classState)
-    (if (pair? (finallyblock expression))
-        (evaluateBody (car (finallyblock expression))
-                      (evaluateBody (car (catchblock expression)) (call/cc (lambda (e)
-                                 (letrec ((eval (lambda (body state classState)
-                                                  (if (null? body)
-                                                      state
-                                                      (eval (cdr body) (mState (car body) state (lambda(v) v) e classState) classState)))))
-                                   (eval (cadr expression) state classState)))) classState) classState)
-        (if (pair? (catchblock expression))
-            (evaluateBody (car (catchblock expression)) (call/cc (lambda (e)
-                                 (letrec ((eval (lambda (body state classState)
-                                                  (if (null? body)
-                                                      state
-                                                      (eval (cdr body) (mState (car body) state (lambda(v) v) e classState) classState)))))
-                                   (eval (cadr expression) state classState)))) classState)
-            (letrec ((eval (lambda (body state classState)
-                                                  (if (null? body)
-                                                      state
-                                                      (eval (cdr body) (mState (car body) state (lambda(v) v) e classState) classState)))))
-                                   (eval (cadr expression) state classState))))))
+  (lambda (expression state classState return continue break throw)
+    (if (null? (finallyblock expression))
+        (mStateCatch expression state classState return continue break throw)
+        (functionCall '(funcall finally) (mStateFunctionDeclare (append '(finally) '(()) (car(cdr(finallyblock expression)))) (mStateCatch expression state classState return continue break throw)) classState)
+        )))
+(define mStateCatch
+  (lambda (expression state classState return continue break throw)
+    (functionCall (append '(funcall) (append '(catch) (list(list (car(cadr(catchblock expression))) ))))
+                  (consPairToState (car(cadr(catchblock expression)))
+                                   (call/cc (lambda(throw) 
+                                              (mStateEvaluate (cadr expression) state classState return continue break throw)))(mStateFunctionDeclare (catchblock expression) state)) classState)))
+           
 (define mStateFunctionDeclare
   (lambda (expression state)
     (consPairToState (name expression) (box (cddr expression)) state)))
@@ -231,14 +222,15 @@
   (lambda (expression state classState)
     (call/cc (lambda (return)
                (cond
-                 ;((pair?(name expression)) (functionDotCall expression state classState return))
-                 ((not(pair?(valueList expression))) (mStateEvaluate (fxnBody (findFunction (name expression) state classState)) (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda)))
-                 ((pair?(valueList expression))(mStateEvaluate (addParamToBody (paramList(findFunction (name expression) state classState)) ;paramList
+                 ((pair?(name expression)) (functionDotCall expression state classState return))
+                 ((not(pair?(valueList expression))) (mStateEvaluate (fxnBody (findFunction expression state classState)) (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda)))
+                 ((pair?(valueList expression)) (mStateEvaluate (addParamToBody (paramList(findFunction expression state classState)) ;paramList
                                                                                (valueList expression) ;valueList
-                                                                               (fxnBody (findFunction (name expression) state classState)) ;body
+                                                                               (fxnBody (findFunction expression state classState)) ;body
                                                                                state classState) ;states for addParamsToBody
                              (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda)))
-                 (else 1 ))))))
+                 )))))
+
 (define functionDotCall
   (lambda (expression state classState return)
     (cond
