@@ -106,8 +106,8 @@
       ((eq? 'false expression) #f)
       ((not (pair? expression)) (value(findValue expression state)));means that the expression is a variable
       ((eq? 'dot (operator expression)) (value (findDotValue expression state classState)))
-      ((eq? '== (operator expression)) (mBool== expression state))
-      ((eq? '!= (operator expression)) (mBool!= expression state))
+      ((eq? '== (operator expression)) (mBool== expression state classState))
+      ((eq? '!= (operator expression)) (mBool!= expression state classState))
       ((eq? '< (operator expression)) (< (mValue (leftOperand expression) state classState) (mValue (rightOperand expression) state classState)))
       ((eq? '> (operator expression)) (> (mValue (leftOperand expression) state classState) (mValue (rightOperand expression) state classState)))
       ((eq? '<= (operator expression)) (<= (mValue (leftOperand expression) state classState) (mValue (rightOperand expression) state classState)))
@@ -120,14 +120,14 @@
 
 ;helper method of mBool that checks the type of operands to call either mValue or mBool    
 (define mBool==
-  (lambda (expression state)
+  (lambda (expression state classState)
     (cond
-      ((and(eq? (typeof (leftOperand expression) state) 'int) (eq? (typeof (rightOperand expression) state) 'int)) (eq? (mValue (leftOperand expression) state) (mValue (rightOperand expression) state)))
-      ((and(eq? (typeof (leftOperand expression) state) 'boolean) (eq? (typeof (rightOperand expression) state) 'boolean)) (eq? (mBool (leftOperand expression) state) (mBool (rightOperand expression) state)))
+      ((and(eq? (typeof (leftOperand expression) state classState) 'int) (eq? (typeof (rightOperand expression) state classState) 'int)) (eq? (mValue (leftOperand expression) state classState) (mValue (rightOperand expression) state classState)))
+      ((and(eq? (typeof (leftOperand expression) state classState) 'boolean) (eq? (typeof (rightOperand expression) state classState) 'boolean)) (eq? (mBool (leftOperand expression) state classState) (mBool (rightOperand expression) state classState)))
       (else (error 'mBool== comparing int with boolean)))))
 (define mBool!=
-  (lambda (expression state)
-    (not (mBool== expression state))))
+  (lambda (expression state classState)
+    (not (mBool== expression state classState))))
 
 ;finds the type of the expression and returns the type as an atom
 (define typeof
@@ -233,14 +233,26 @@
 
 (define functionDotCall
   (lambda (expression state classState return)
+    (if (not(pair?(valueList expression)))
+        (mStateEvaluate (fxnBody (findFunction expression state classState)) (functionState expression state classState) classState return (emptyLambda) (emptyLambda) (emptyLambda))
+        (mStateEvaluate (addParamToBody (paramList(findFunction expression state classState)) ;paramList
+                                        (valueList expression) ;valueList
+                                        (fxnBody (findFunction expression state classState)) ;body
+                                        state classState) ;states for addParamsToBody
+                         (functionState expression state classState) classState return (emptyLambda) (emptyLambda) (emptyLambda)))))
+(define functionState
+  (lambda (fxn state classState)
     (cond
-      ((cadr (name expression)))
-      ((not(pair?(valueList (valueList expression)))) (mStateEvaluate (fxnBody (findFunction (dot(name expression)) state classState)) (functionScope state) classState return))
-      ((pair?(valueList expression))(mStateEvaluate (addParamToBody (paramList(findFunction (name expression) state classState)) ;paramList
-                                                                               (valueList expression) ;valueList
-                                                                               (fxnBody (findFunction (name expression) state classState)) ;body
-                                                                               state classState) ;states for addParamsToBody
-                             (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda))))))
+      ((eq? 'super (name fxn)) (cddr state)) ;go to next state to find parent
+      ((eq? 'this (name fxn)) state) ;is this the right state?
+      ((and (not(pair? (dot (name fxn)))) (stateIncludes? (cadr (name fxn)) state) (stateIncludes? (dot (name fxn)) (findValue (cadr (name fxn)) state)))
+       (findValue (cadr (name fxn)) state)) ;non-static object case
+      ((not(pair? (dot (name fxn)))) (lookupClassBody (cadr (name fxn)) classState)) ;static case
+      ;chained functions, not sure if it works
+      ((and (stateIncludes? (cadr (name fxn)) state) (stateIncludes? (cadr(name fxn)) (findValue (cadr (name fxn)) state)))
+       (findValue (cadr (name fxn)) state))
+      (else  (lookupClassBody (cadr (name fxn)) classState))
+      )))
       
 ;function scope is needed so that the variables declared from the state that calls the function does not affect the function's state
 ;eg. {a = 5; Math.add(1, 4);} where Math.add has the param (a, b).
@@ -290,7 +302,7 @@
       ((eq? (typeof value state classState) 'int) (mStateSetBox var (list '(int static) (mValue value state classState)) state))
       ((eq? (typeof value state classState) 'boolean) (mStateSetBox var (list '(boolean static) (mBool value state classState)) state))
       ((not (pair? value)) (mStateSetBox var (list  (list (typeof (value state classState) 'static)) (findDotValue value state classState)) state));if a variable is assigned
-      ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) mStateNewInstance value classState)))
+      ((eq? (operator value) 'new) (mStateSetBox var (list (operand value) (mStateNewInstance value classState))))
       (else (error 'mStateAssign "assigning an invalid type")))))
   
 ;mState's helper method to do variable declaration
@@ -369,13 +381,13 @@
   (lambda (expression state classState return continue break throw)
     (if (pair? (cdddr expression)) ;if expression has an else statement
         (mStateIfElse (condition expression) (then expression) (else expression) state classState return continue break throw)
-        (if (mBool (condition expression) state)
+        (if (mBool (condition expression) state classState)
             (mState (then expression) state classState return continue break throw)
             state))))
 
 (define mStateIfElse
   (lambda (condition then else state classState return continue break throw)
-    (if (mBool condition state)
+    (if (mBool condition state classState)
         (mState then state classState return continue break throw) ;just change the state here if I want to do the side effect condition
         (mState else state classState return continue break throw))))
     
@@ -409,7 +421,7 @@
   (lambda (condition body state classState return continue break throw)
     (call/cc (lambda(Break)
     (letrec ((loop (lambda (condition body state classState return continue break throw)
-                     (if (mBool condition state)
+                     (if (mBool condition state classState)
                          (loop condition body (mState body state classState return continue Break throw) classState return continue Break throw)
                          state))
                    ))
