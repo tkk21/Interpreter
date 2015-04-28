@@ -230,13 +230,26 @@
 (define functionCall
   (lambda (expression state classState)
     (call/cc (lambda (return)
-               (if (not(pair? (valueList expression)))
-                   (mStateEvaluate (fxnBody (findFunction (name expression) state classState)) (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda))
-                   (mStateEvaluate (addParamToBody (paramList(findFunction (name expression) state classState)) ;paramList
-                                             (valueList expression) ;valueList
-                                             (fxnBody (findFunction (name expression) state classState)) ;body
-                                             state classState) ;states for addParamsToBody
-                             (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda))))))) ;states for evaluateBody
+               (cond
+                 ;((pair?(name expression)) (functionDotCall expression state classState return))
+                 ((not(pair?(valueList expression))) (mStateEvaluate (fxnBody (findFunction (name expression) state classState)) (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda)))
+                 ((pair?(valueList expression))(mStateEvaluate (addParamToBody (paramList(findFunction (name expression) state classState)) ;paramList
+                                                                               (valueList expression) ;valueList
+                                                                               (fxnBody (findFunction (name expression) state classState)) ;body
+                                                                               state classState) ;states for addParamsToBody
+                             (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda)))
+                 (else 1 ))))))
+(define functionDotCall
+  (lambda (expression state classState return)
+    (cond
+      ((cadr (name expression)))
+      ((not(pair?(valueList (valueList expression)))) (mStateEvaluate (fxnBody (findFunction (dot(name expression)) state classState)) (functionScope state) classState return))
+      ((pair?(valueList expression))(mStateEvaluate (addParamToBody (paramList(findFunction (name expression) state classState)) ;paramList
+                                                                               (valueList expression) ;valueList
+                                                                               (fxnBody (findFunction (name expression) state classState)) ;body
+                                                                               state classState) ;states for addParamsToBody
+                             (functionScope state) classState return (emptyLambda) (emptyLambda) (emptyLambda))))))
+      
 ;function scope is needed so that the variables declared from the state that calls the function does not affect the function's state
 ;eg. {a = 5; Math.add(1, 4);} where Math.add has the param (a, b).
 (define functionScope 
@@ -320,10 +333,10 @@
       ((eq? 'this (name var)) (mStateSetBox (dot var) (valueWithType value state classState) state))
       ((and (not(pair? (name var))) (stateIncludes? (cadr var) state) (stateIncludes? (dot var) (findValue (cadr var) state)))
        (mStateSetBox (dot var) (valueWithType value state classState) (findValue (cadr var) state))) ;non-static case or if the static var is within scope
-      ((not(pair? (name var))) (mStateSetBox (dot var) (valueWithType value state classState) (lookupClassBody (cadr var) classState)));non-static case
+      ((not(pair? (name var))) (begin (mStateSetBox (dot var) (valueWithType value state classState) (lookupClassBody (cadr var) classState)) state));non-static case
       ((and (stateIncludes? (cadr var) state) (stateIncludes? (dot var) (findValue (cadr var) state)))
        (mStateDotAssign (dot var) (valueWithType value state classState) (findValue (cadr var) state)))
-      (else (mStateDotAssign (dot var) (valueWithType value state classState) (lookupClassBody (name var) classState) classState))) ;no need to (value the result) because that is already done ; this one is for nested dots
+      (else (begin (mStateDotAssign (dot var) (valueWithType value state classState) (lookupClassBody (name var) classState) classState) state))) ;no need to (value the result) because that is already done ; this one is for nested dots
     ))
 
 (define valueWithType
@@ -357,7 +370,7 @@
       (else (mStateSetBox-cps var value (nextPair state) (lambda (v) (cps (consPairToState (car(vars(scope state))) (car(vals(scope state))) v)))))))) ;not this one
 (define mStateSetBox
   (lambda (var value state)
-    (mStateSetBox-cps var value state (lambda (v) v))))
+    (begin (mStateSetBox-cps var value state (lambda (v) v)) state)))
 
 ;mState's helper methods to do if statements
 (define mStateIf
@@ -429,7 +442,7 @@
       ((eq? 'this (name expression)) (findValue (dot expression) state)) ;is this the right state?
       ((and (not(pair? (name expression))) (stateIncludes? (cadr expression) state) (stateIncludes? (dot expression) (findValue (cadr expression) state))) 
        (findValue (dot expression) (findValue (cadr expression) state)));non-static case or if the static var is within scope
-      ((not(pair? (name expression))) (findValue (dot expression) (lookupClassBody (cadr expression) classState))) ;non-static case
+      ((not(pair? (name expression))) (findValue (dot expression) (lookupClassBody (cadr expression) classState))) ;static case
       ((and (stateIncludes? (cadr expression) state) (stateIncludes? (dot expression) (findValue (cadr expression) state)))
        (lookup (dot expression) (findValue (cadr expression) state) classState))
       (else (lookup (dot expression) (lookupClassBody (name expression) classState) classState)) ;no need to (value the result) because that is already done ; this one is for nested dots
@@ -442,18 +455,19 @@
       ((eq? (car (vars (scope state))) var) #t) ; found value
       (else (stateIncludes? var (nextPair state))))))
 
-    
-    
 (define findFunction
   (lambda (fxn state classState)
     (cond
       ((not (pair? fxn)) (findValue fxn state))
       ((eq? 'super (name fxn)) (findValue (dot fxn) (cddr state))) ;go to next state to find parent
       ((eq? 'this (name fxn)) (findValue (dot fxn) state)) ;is this the right state?
-      ((not(pair? (name fxn))) (findValue (dot fxn) state)) ;object case
-      (else (findDotValue (dot fxn) (lookupClassBody (name fxn) classState) classState)) ;no need to (value the result) because that is already done
-      ;((eq? 'dot (operator fxn)) (findValue (caddr fxn) (lookupClassBody (cadr fxn) classState)))
-      
+      ((and (not(pair? (dot (name fxn)))) (stateIncludes? (cadr (name fxn)) state) (stateIncludes? (dot (name fxn)) (findValue (cadr (name expression)) state)))
+            (findValue (dot (name fxn)) (findValue (cadr (name fxn)) state))) ;non-static object case
+      ((not(pair? (name fxn))) (findValue (dot expression) (lookupClassBody (cadr expression) classState))) ;static case
+      ;chained functions, not sure if it works
+      ((and (stateIncludes? (cadr (name fxn)) state) (stateIncludes? (cadr(name fxn)) (findValue (cadr (name fxn)) state)))
+       (findFunction (dot (name fxn)) (findValue (cadr (name fxn)) state) classState))
+      (else (findFunction (dot (name fxn)) (lookupClassBody (cadr (name fxn)) classState) classState))
       )))
 
 ;finds a value inside the state by using the var to look it up
